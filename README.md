@@ -9,7 +9,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
 
 | Thuật Toán               | Mô Tả                                                                 | Minh Hóa GIF                              |
 |--------------------------|----------------------------------------------------------------------|-------------------------------------------|
-| **Breadth-First Search (BFS)** | Tìm kiếm theo chiều rộng, đảm bảo đường đi ngắn nhất.             | <img src="" width="500" alt="BFS"> |
+| **Breadth-First Search (BFS)** | Tìm kiếm theo chiều rộng, đảm bảo đường đi ngắn nhất.             | <img src="images/bfs.gif" width="500" alt="BFS"> |
 | **Depth-First Search (DFS)**   | Tìm kiếm theo chiều sâu, có thể không tìm được đường ngắn nhất.    | <img src="" width="500" alt="DFS"> |
 | **Uniform Cost Search (UCS)**  | Tìm kiếm dựa trên chi phí, tương tự BFS nhưng với trọng số.        | <img src="" width="500" alt="UCS"> |
 | **Iterative Deepening DFS (IDDFS)** | Kết hợp DFS và giới hạn độ sâu, hiệu quả hơn DFS.                 | <img src="" width="500" alt="IDDFS"> |
