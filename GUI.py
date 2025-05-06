@@ -411,6 +411,7 @@ while running:
                     if YES_BUTTON_RECT.collidepoint(x, y):
                         show_popup = False
                     elif NO_BUTTON_RECT.collidepoint(x, y):
+                        show_popup = False
                         if solution:
                             print("Running solution automatically...")
                             for state in solution:
