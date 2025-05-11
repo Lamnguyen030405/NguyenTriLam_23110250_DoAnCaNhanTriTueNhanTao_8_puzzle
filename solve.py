@@ -839,7 +839,7 @@ class Solve:
         visited = {initial_belief_state}
 
         step = 0
-        while queue and step < max_steps:
+        while queue:
             belief_state, actions_taken = queue.popleft()
             step += 1
 

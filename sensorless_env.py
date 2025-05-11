@@ -8,7 +8,7 @@ class SensorlessEnvironment:
         self.screen = screen
         self.width = width
         self.height = height
-        self.small_grid_size = small_grid_size
+        self.small_grid_size = 70
         self.solver = Solve(start_state, goal_state)
         
         # Tạo belief state ban đầu
@@ -24,7 +24,7 @@ class SensorlessEnvironment:
         
         # Vị trí và kích thước các thành phần giao diện
         self.SENSORLESS_SOLVE_BUTTON_RECT = pygame.Rect(self.width * 0.05, self.height * 0.05, self.width * 0.1, self.height * 0.06)
-        self.BACK_TO_MAIN_BUTTON_RECT = pygame.Rect(self.width * 0.85, self.height * 0.05, self.width * 0.1, self.height * 0.06)
+        self.BACK_TO_MAIN_BUTTON_RECT = pygame.Rect(self.width * 0.85, self.height * 0.05, self.width * 0.15, self.height * 0.06)
         self.SENSORLESS_NEXT_STEP_BUTTON_RECT = pygame.Rect(self.width * 0.2, self.height * 0.05, self.width * 0.1, self.height * 0.06)
         self.SENSORLESS_BACK_BUTTON_RECT = pygame.Rect(self.width * 0.35, self.height * 0.05, self.width * 0.1, self.height * 0.06)
 
@@ -62,8 +62,8 @@ class SensorlessEnvironment:
         font = pygame.font.Font(None, int(self.height * 0.035))
         
         for idx, state in enumerate(states):
-            pos_x = x_offset + (idx % 4) * (3 * self.small_grid_size + self.width * 0.05)
-            pos_y = y_offset + (idx // 4) * (3 * self.small_grid_size + self.height * 0.05)
+            pos_x = x_offset + (idx % 5) * (3 * self.small_grid_size + self.width * 0.05)
+            pos_y = y_offset + (idx // 5) * (3 * self.small_grid_size + self.height * 0.05)
             self.draw_small_board(list(state), (pos_x, pos_y), f"State {idx + 1}")
 
     def draw(self):
@@ -72,8 +72,8 @@ class SensorlessEnvironment:
         # Hiển thị belief state ban đầu
         font = pygame.font.Font(None, int(self.height * 0.045))
         text = font.render("Initial Belief State:", True, (0, 0, 0))
-        self.screen.blit(text, (self.width * 0.05, self.height * 0.1))
-        self.draw_belief_state(self.initial_belief_states, self.height * 0.15)
+        self.screen.blit(text, (self.width * 0.05, self.height * 0.12))
+        self.draw_belief_state(self.initial_belief_states, self.height * 0.2)
 
         # Hiển thị belief state hiện tại nếu đã giải
         if self.solution:
@@ -81,8 +81,8 @@ class SensorlessEnvironment:
             for state in self.solution[self.current_step]:
                 current_belief_state.add(tuple(state))
             text = font.render("Current Belief State:", True, (0, 0, 0))
-            self.screen.blit(text, (self.width * 0.05, self.height * 0.45))
-            self.draw_belief_state(current_belief_state, self.height * 0.5)
+            self.screen.blit(text, (self.width * 0.05, self.height * 0.52))
+            self.draw_belief_state(current_belief_state, self.height * 0.6)
 
         # Nút "Solve"
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -128,7 +128,7 @@ class SensorlessEnvironment:
         if self.actions:
             font = pygame.font.Font(None, int(self.height * 0.045))
             text = font.render(f"Action Sequence: {self.actions}", True, (0, 0, 0))
-            self.screen.blit(text, (self.width * 0.05, self.height * 0.85))
+            self.screen.blit(text, (self.width * 0.05, self.height * 0.92))
 
             if not self.is_solution_found:
                 text = font.render("NO SOLUTION FOUND!", True, (255, 0, 0))
@@ -143,7 +143,7 @@ class SensorlessEnvironment:
             # Nút "Solve"
             if self.SENSORLESS_SOLVE_BUTTON_RECT.collidepoint(x, y):
                 start_time = pygame.time.get_ticks() / 1000.0
-                self.actions = self.solver.solve_sensorless(max_steps=50)
+                self.actions = self.solver.solve_sensorless(max_steps=500)
                 end_time = pygame.time.get_ticks() / 1000.0
                 execution_time = end_time - start_time
 
