@@ -128,6 +128,149 @@ Các thuật toán tìm kiếm không thông tin (Uninformed Search) đều khô
 
 Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và cần lời giải tối ưu, **BFS, UCS hoặc IDS** là lựa chọn phù hợp. Tuy nhiên, khi bộ nhớ hạn chế, **IDS** thường là phương án an toàn hơn.
 
+## Informed Search Algorithms
+
+### 1. **Khái niệm chung về Informed Search Algorithms**
+- **Informed Search** (tìm kiếm có thông tin) sử dụng **hàm heuristic** để ước lượng chi phí từ trạng thái hiện tại đến trạng thái mục tiêu, giúp định hướng tìm kiếm hiệu quả hơn so với Uninformed Search (BFS, DFS, UCS, IDS).
+- **Các thành phần chính**:
+  - **Không gian trạng thái (State Space)**: Tập hợp tất cả các trạng thái có thể có của bài toán (ví dụ: các hoán vị của ô trong 8-puzzle).
+  - **Trạng thái ban đầu (Initial State)**: Điểm xuất phát của bài toán.
+  - **Trạng thái mục tiêu (Goal State)**: Trạng thái cần đạt được.
+  - **Hành động (Actions)**: Các thao tác hợp lệ để chuyển đổi giữa các trạng thái (ví dụ: di chuyển ô trống lên, xuống, trái, phải).
+  - **Chi phí đường đi (Path Cost, g(n))**: Tổng chi phí từ trạng thái ban đầu đến trạng thái hiện tại (thường là số bước hoặc chi phí cụ thể của hành động).
+  - **Hàm heuristic (h(n))**: Hàm ước lượng chi phí từ trạng thái hiện tại đến mục tiêu. Hàm này phải **admissible** (không overestimated) và lý tưởng là **consistent** (đáp ứng bất đẳng thức tam giác) để đảm bảo tính tối ưu.
+  - **Cấu trúc dữ liệu**: Thường sử dụng hàng đợi ưu tiên (priority queue) để ưu tiên trạng thái có chi phí thấp nhất hoặc giá trị heuristic nhỏ nhất.
+
+### 2. **Các thuật toán Informed Search**
+
+#### a. **A* Search**
+- **Mô tả**: A* sử dụng hàm đánh giá **f(n) = g(n) + h(n)**:
+  - **g(n)**: Chi phí thực tế từ trạng thái ban đầu đến trạng thái hiện tại.
+  - **h(n)**: Chi phí ước lượng từ trạng thái hiện tại đến mục tiêu (ví dụ: khoảng cách Manhattan trong 8-puzzle).
+  - A* ưu tiên khám phá trạng thái có **f(n)** nhỏ nhất, đảm bảo đường đi tối ưu nếu heuristic là admissible.
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu, thêm vào hàng đợi ưu tiên với chi phí `f(n) = g(n) + h(n)`.
+  2. Lấy trạng thái có `f(n)` nhỏ nhất từ hàng đợi, kiểm tra xem có phải trạng thái mục tiêu không.
+  3. Sinh các trạng thái con, tính `g(n)` và `h(n)` cho mỗi trạng thái, thêm vào hàng đợi.
+  4. Lặp lại cho đến khi tìm thấy mục tiêu hoặc hàng đợi rỗng.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn và chi phí hành động lớn hơn 0.
+  - **Tối ưu**: Có, nếu heuristic là admissible (h(n) ≤ chi phí thực tế đến mục tiêu).
+  - **Độ phức tạp**:
+    - Thời gian: O(b^d), nhưng thường nhanh hơn BFS/UCS nhờ heuristic định hướng.
+    - Không gian: O(b^d), do lưu trữ nhiều trạng thái trong hàng đợi ưu tiên.
+- **Ứng dụng**: Tìm đường đi tối ưu trong các bài toán như 8-puzzle, định tuyến, hoặc lập kế hoạch, khi cần đảm bảo chi phí thấp nhất.
+
+#### b. **Iterative Deepening A* (IDA*)**
+- **Mô tả**: IDA* kết hợp ý tưởng của A* và Iterative Deepening Search (IDS). Nó sử dụng hàm `f(n) = g(n) + h(n)` nhưng giới hạn tìm kiếm theo ngưỡng `f(n)` tăng dần, thực hiện tìm kiếm theo chiều sâu (DFS) trong mỗi lần lặp.
+- **Cách hoạt động**:
+  1. Bắt đầu với ngưỡng ban đầu là `f(n) = h(n)` của trạng thái ban đầu.
+  2. Thực hiện DFS, chỉ khám phá các trạng thái có `f(n)` ≤ ngưỡng.
+  3. Nếu không tìm thấy mục tiêu, tăng ngưỡng lên giá trị `f(n)` nhỏ nhất vượt ngưỡng hiện tại, lặp lại.
+  4. Tiếp tục cho đến khi tìm thấy mục tiêu hoặc không còn trạng thái để khám phá.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn.
+  - **Tối ưu**: Có, nếu heuristic là admissible.
+  - **Độ phức tạp**:
+    - Thời gian: O(b^d), nhưng có thể chậm hơn A* do lặp lại nhiều lần.
+    - Không gian: O(bd), tiết kiệm bộ nhớ hơn A* vì chỉ lưu một đường đi tại mỗi lần lặp.
+- **Ứng dụng**: Phù hợp cho các bài toán như 8-puzzle khi bộ nhớ hạn chế, nhưng cần giải pháp tối ưu.
+
+#### c. **Greedy Best-First Search (Greedy)**
+- **Mô tả**: Greedy ưu tiên khám phá trạng thái có giá trị **heuristic h(n)** nhỏ nhất, bỏ qua chi phí đường đi `g(n)`. Nó tập trung vào việc tiến gần trạng thái mục tiêu nhanh nhất có thể.
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu, thêm vào hàng đợi ưu tiên với giá trị `h(n)`.
+  2. Lấy trạng thái có `h(n)` nhỏ nhất, kiểm tra xem có phải mục tiêu không.
+  3. Sinh các trạng thái con, tính `h(n)` cho mỗi trạng thái, thêm vào hàng đợi.
+  4. Lặp lại cho đến khi tìm thấy mục tiêu hoặc hàng đợi rỗng.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, có thể bị kẹt trong các vòng lặp hoặc bỏ sót giải pháp.
+  - **Tối ưu**: Không, vì không xem xét chi phí đường đi `g(n)`, có thể dẫn đến đường đi dài hơn.
+  - **Độ phức tạp**:
+    - Thời gian: O(b^m), với m là độ sâu tối đa, nhưng thường nhanh hơn A* do chỉ dựa vào `h(n)`.
+    - Không gian: O(b^m), tùy thuộc vào số trạng thái được lưu trữ.
+- **Ứng dụng**: Dùng khi cần tìm giải pháp nhanh, không yêu cầu tối ưu, như trong một số bài toán tìm kiếm đơn giản hoặc khi thời gian thực thi là ưu tiên.
+
+---
+
+### 3. **So sánh tổng quát**
+| Thuật toán | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|------------|------------|--------|-----------------------|------------------------|----------------|
+| **A***     | Có         | Có     | O(b^d)               | O(b^d)                | Tìm đường đi tối ưu (8-puzzle, định tuyến) |
+| **IDA***   | Có         | Có     | O(b^d)               | O(bd)                 | Tìm đường đi tối ưu, tiết kiệm bộ nhớ |
+| **Greedy** | Không      | Không  | O(b^m)               | O(b^m)                | Tìm giải pháp nhanh, không cần tối ưu |
+
+---
+
+### 4. **Giải pháp tổng quát của Informed Search**
+- **Quy trình chung**:
+  1. Xác định trạng thái ban đầu, trạng thái mục tiêu, và các hành động có thể thực hiện.
+  2. Xây dựng hàm heuristic (ví dụ: khoảng cách Manhattan cho 8-puzzle) để ước lượng chi phí.
+  3. Sử dụng hàng đợi ưu tiên hoặc chiến lược DFS với ngưỡng để quản lý các trạng thái cần khám phá.
+  4. Áp dụng chiến lược chọn trạng thái:
+     - **A***: Dựa trên `f(n) = g(n) + h(n)`.
+     - **IDA***: DFS với ngưỡng `f(n)` tăng dần.
+     - **Greedy**: Dựa trên `h(n)` nhỏ nhất.
+  5. Tìm đường đi từ trạng thái ban đầu đến mục tiêu, ưu tiên các trạng thái có chi phí hoặc heuristic thấp.
+- **Ưu điểm**:
+  - Hiệu quả hơn Uninformed Search nhờ heuristic định hướng.
+  - A* và IDA* đảm bảo tối ưu nếu heuristic là admissible.
+  - IDA* tiết kiệm bộ nhớ, phù hợp cho các bài toán lớn.
+  - Greedy nhanh, phù hợp khi không cần tối ưu.
+- **Nhược điểm**:
+  - A* tốn bộ nhớ do lưu trữ nhiều trạng thái.
+  - IDA* có thể chậm do lặp lại nhiều lần.
+  - Greedy không đảm bảo hoàn chỉnh hoặc tối ưu, dễ bị kẹt trong các cực trị cục bộ.
+- **Yêu cầu**:
+  - Cần thiết kế hàm heuristic phù hợp (admissible và consistent cho A* và IDA*).
+  - Kiểm tra chu kỳ hoặc trạng thái lặp để tránh vòng lặp vô hạn.
+
+
+### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
+| **Thuật Toán**                       | **Minh Họa GIF**                                      |
+|-------------------------------------|-------------------------------------------------------|
+| **A\* Search (A-Star)**             | <img src="images/astar.gif" width="500" alt="A*">     |
+| **Iterative Deepening A\* (IDA\*)** | <img src="images/ida_star.gif" width="500" alt="IDA*">|
+| **Greedy Best-First Search**        | <img src="images/greedy.gif" width="500" alt="Greedy">|
+
+
+### 🔍 So sánh các thuật toán tìm kiếm có thông tin (Informed Search Algorithms)
+
+| **Thuật Toán**        | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian** | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle**                                                                   | **Ưu điểm**                                       | **Nhược điểm**                                          |
+| --------------------- | -------------- | ---------- | ------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------- |
+| **A\***               | Có             | Có         | `O(b^d)`                  | `O(b^d)`                   | ✔ Hiệu quả cao, tìm đường đi ngắn nhất nhanh hơn BFS/UCS nhờ heuristic. Phù hợp khi đủ bộ nhớ. | ✅ Tối ưu, hoàn chỉnh, nhanh hơn Uninformed Search | ❌ Tốn nhiều bộ nhớ, giảm hiệu suất với độ sâu lớn (>20) |
+| **IDA\***             | Có             | Có         | `O(b^d)`                  | `O(bd)`                    | ✔ Tiết kiệm bộ nhớ, phù hợp cho hệ thống hạn chế tài nguyên. Chậm hơn A\* ở độ sâu lớn.        | ✅ Tối ưu, tiết kiệm bộ nhớ                        | ❌ Chậm hơn A\* do phải lặp lại nhiều lần                |
+| **Greedy Best-First** | Không          | Không      | `O(b^m)`                  | `O(b^m)`                   | ✔ Nhanh, nhưng dễ bị kẹt hoặc tìm đường không tối ưu. Phù hợp khi cần kết quả nhanh.           | ✅ Nhanh, đơn giản                                 | ❌ Không tối ưu, có thể bỏ sót lời giải tốt hơn          |
+
+### **Chú thích:**
+* `b`: Số nhánh trung bình (trong 8-puzzle, thường ≈ 2–4 tùy vị trí ô trống).
+* `d`: Độ sâu của lời giải tối ưu.
+* `m`: Độ sâu tối đa của không gian trạng thái.
+* **Heuristic sử dụng**: *Khoảng cách Manhattan* là heuristic **admissible** và **consistent**, đảm bảo tính tối ưu cho thuật toán **A\*** và **IDA\***.
+
+### 📝 **Nhận xét chung:**
+
+Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***, **IDA\*** và **Greedy Best-First Search** tận dụng heuristic để hướng dẫn quá trình tìm kiếm hiệu quả hơn so với các thuật toán không thông tin.
+
+* **A\*** là lựa chọn **tối ưu nhất** nếu hệ thống có đủ bộ nhớ, nhờ vào tính chất tối ưu và nhanh nhờ sử dụng heuristic tốt (ví dụ: Manhattan).
+* **IDA\*** phù hợp cho các môi trường **hạn chế tài nguyên** (như thiết bị nhúng, bộ nhớ thấp), vẫn đảm bảo tối ưu nhưng **hy sinh tốc độ** vì phải lặp lại nhiều lần.
+* **Greedy Best-First Search** hoạt động **nhanh và đơn giản**, tuy nhiên **thiếu tính tối ưu**, dễ rơi vào bẫy cục bộ (local minima) nếu heuristic không tốt.
+
+👉 **Tóm lại**:
+
+* Nếu **ưu tiên chất lượng lời giải** và **có đủ tài nguyên**, hãy chọn **A\***.
+* Nếu **ưu tiên tiết kiệm bộ nhớ**, chọn **IDA\***.
+* Nếu **cần kết quả nhanh** và **không quá quan tâm tối ưu**, có thể thử **Greedy**.
+
+
+
+
+
+
+
+
+
+
 
 ## 👨‍💻 Tác giả
 
