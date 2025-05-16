@@ -263,10 +263,210 @@ Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***
 * Nếu **cần kết quả nhanh** và **không quá quan tâm tối ưu**, có thể thử **Greedy**.
 
 
+## Local Search Algorithms
+
+### 1. **Khái niệm chung về Local Search Algorithms**
+- **Local Search** (tìm kiếm cục bộ) tập trung vào việc cải thiện một giải pháp hiện tại bằng cách khám phá các trạng thái lân cận, thay vì khám phá toàn bộ không gian trạng thái như các thuật toán Informed/Uninformed Search.
+- Không duy trì một cây tìm kiếm hoặc hàng đợi các trạng thái, mà chỉ làm việc với trạng thái hiện tại và các trạng thái lân cận của nó.
+- Thường sử dụng trong các bài toán tối ưu, khi không gian trạng thái lớn và mục tiêu là tìm giải pháp tốt (không nhất thiết tối ưu toàn cục).
+- **Các thành phần chính**:
+  - **Không gian trạng thái (State Space)**: Tập hợp tất cả các trạng thái có thể có (ví dụ: các hoán vị của ô trong 8-puzzle).
+  - **Trạng thái ban đầu (Initial State)**: Một giải pháp khởi đầu, thường được chọn ngẫu nhiên hoặc cố định.
+  - **Trạng thái mục tiêu (Goal State)**: Trạng thái lý tưởng hoặc tiêu chí tối ưu (ví dụ: trạng thái mục tiêu trong 8-puzzle hoặc giá trị hàm mục tiêu tối ưu).
+  - **Hành động (Actions)**: Các thao tác để chuyển từ trạng thái hiện tại sang trạng thái lân cận (ví dụ: di chuyển ô trống trong 8-puzzle).
+  - **Hàm mục tiêu (Objective Function)**: Đánh giá chất lượng của trạng thái, thường là hàm heuristic (như khoảng cách Manhattan) hoặc một hàm đánh giá khác. Trong tối ưu, có thể là tối thiểu hóa hoặc tối đa hóa giá trị hàm.
+  - **Lân cận (Neighborhood)**: Tập hợp các trạng thái có thể đạt được từ trạng thái hiện tại bằng một hành động.
+
+---
+
+### 2. **Các thuật toán Local Search**
+
+#### a. **Simple Hill Climbing**
+- **Mô tả**: Chọn trạng thái lân cận đầu tiên có giá trị hàm mục tiêu tốt hơn trạng thái hiện tại (tối ưu hóa cục bộ).
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu.
+  2. Đánh giá các trạng thái lân cận, chọn trạng thái đầu tiên có giá trị hàm mục tiêu tốt hơn (ví dụ: khoảng cách Manhattan nhỏ hơn).
+  3. Chuyển sang trạng thái lân cận đó, lặp lại cho đến khi không tìm thấy trạng thái lân cận nào tốt hơn (đỉnh cục bộ).
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, dễ bị kẹt ở cực trị cục bộ.
+  - **Tối ưu**: Không, chỉ tìm giải pháp cục bộ.
+  - **Độ phức tạp**:
+    - Thời gian: Phụ thuộc vào số lân cận và số lần lặp, thường thấp (O(k) mỗi bước, với k là số lân cận).
+    - Không gian: O(1), chỉ lưu trạng thái hiện tại và lân cận.
+- **Ứng dụng**: Tìm giải pháp nhanh trong các bài toán như 8-puzzle, tối ưu hóa hàm đơn giản.
+
+#### b. **Steepest-Ascent Hill Climbing**
+- **Mô tả**: Xem xét tất cả các trạng thái lân cận và chọn trạng thái có giá trị hàm mục tiêu tốt nhất (tối ưu hóa cục bộ).
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu.
+  2. Đánh giá tất cả các trạng thái lân cận, chọn trạng thái có giá trị hàm mục tiêu tốt nhất (ví dụ: khoảng cách Manhattan nhỏ nhất).
+  3. Chuyển sang trạng thái tốt nhất, lặp lại cho đến khi không có trạng thái lân cận nào tốt hơn.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, có thể bị kẹt ở cực trị cục bộ.
+  - **Tối ưu**: Không, nhưng thường tốt hơn Simple Hill Climbing do chọn trạng thái lân cận tốt nhất.
+  - **Độ phức tạp**:
+    - Thời gian: O(k) mỗi bước, với k là số lân cận, nhưng tốn thời gian hơn Simple Hill Climbing do đánh giá tất cả lân cận.
+    - Không gian: O(k), để lưu danh sách lân cận.
+- **Ứng dụng**: Phù hợp cho các bài toán như 8-puzzle khi cần cải thiện chất lượng giải pháp so với Simple Hill Climbing.
+
+#### c. **Stochastic Hill Climbing**
+- **Mô tả**: Chọn ngẫu nhiên một trạng thái lân cận có giá trị hàm mục tiêu tốt hơn trạng thái hiện tại, thay vì chọn trạng thái tốt nhất.
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu.
+  2. Tạo danh sách các trạng thái lân cận tốt hơn trạng thái hiện tại (dựa trên hàm mục tiêu).
+  3. Chọn ngẫu nhiên một trạng thái từ danh sách đó, chuyển sang trạng thái này.
+  4. Lặp lại cho đến khi không có trạng thái lân cận nào tốt hơn.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, vẫn có thể bị kẹt ở cực trị cục bộ.
+  - **Tối ưu**: Không, nhưng tính ngẫu nhiên giúp tránh một số cực trị cục bộ so với Simple/Steepest Hill Climbing.
+  - **Độ phức tạp**:
+    - Thời gian: O(k) mỗi bước, nhưng có thể nhanh hơn Steepest do không cần đánh giá tất cả lân cận.
+    - Không gian: O(k), để lưu danh sách lân cận tốt hơn.
+- **Ứng dụng**: Dùng khi muốn cân bằng giữa tốc độ và khả năng thoát khỏi cực trị cục bộ, như trong 8-puzzle hoặc bài toán tối ưu hóa.
+
+#### d. **Simulated Annealing**
+- **Mô tả**: Kết hợp tìm kiếm cục bộ với cơ chế ngẫu nhiên để thoát khỏi cực trị cục bộ, sử dụng khái niệm "nhiệt độ" (temperature) để điều khiển mức độ chấp nhận các trạng thái xấu hơn.
+- **Cách hoạt động**:
+  1. Bắt đầu từ trạng thái ban đầu, thiết lập nhiệt độ ban đầu cao và tốc độ giảm nhiệt độ (cooling rate).
+  2. Chọn ngẫu nhiên một trạng thái lân cận.
+  3. Chấp nhận trạng thái lân cận nếu:
+     - Nó tốt hơn trạng thái hiện tại (theo hàm mục tiêu).
+     - Hoặc, nếu xấu hơn, chấp nhận với xác suất `exp(-ΔE/T)`, với `ΔE` là độ chênh lệch hàm mục tiêu và `T` là nhiệt độ.
+  4. Giảm nhiệt độ dần theo lịch trình (thường là `T = T * cooling_rate`).
+  5. Lặp lại cho đến khi nhiệt độ đạt ngưỡng tối thiểu hoặc tìm được giải pháp đủ tốt.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, nhưng có thể tìm giải pháp tốt nếu điều chỉnh lịch trình nhiệt độ phù hợp.
+  - **Tối ưu**: Không, nhưng có khả năng thoát khỏi cực trị cục bộ, tiến gần giải pháp toàn cục.
+  - **Độ phức tạp**:
+    - Thời gian: Phụ thuộc vào số lần lặp và lịch trình nhiệt độ, thường cao hơn Hill Climbing.
+    - Không gian: O(1), chỉ lưu trạng thái hiện tại và lân cận.
+- **Ứng dụng**: Phù hợp cho các bài toán tối ưu phức tạp như 8-puzzle, lập lịch, hoặc tối ưu hóa hàm với nhiều cực trị cục bộ.
+
+#### e. **Local Beam Search**
+- **Mô tả**: Duy trì một tập hợp `k` trạng thái tốt nhất (beam) và mở rộng chúng, thay vì chỉ làm việc với một trạng thái như Hill Climbing.
+- **Cách hoạt động**:
+  1. Bắt đầu với `k` trạng thái ban đầu (thường chọn ngẫu nhiên).
+  2. Tạo tất cả các trạng thái lân cận từ `k` trạng thái hiện tại.
+  3. Chọn `k` trạng thái lân cận tốt nhất (dựa trên hàm mục tiêu).
+  4. Lặp lại cho đến khi đạt trạng thái mục tiêu hoặc không cải thiện được thêm.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, có thể bỏ sót giải pháp nếu beam không chứa trạng thái dẫn đến mục tiêu.
+  - **Tối ưu**: Không, nhưng thường tìm được giải pháp tốt hơn Hill Climbing do khám phá nhiều trạng thái cùng lúc.
+  - **Độ phức tạp**:
+    - Thời gian: O(kb) mỗi bước, với b là số nhánh trung bình và k là kích thước beam.
+    - Không gian: O(k), để lưu `k` trạng thái.
+- **Ứng dụng**: Dùng trong các bài toán như 8-puzzle, khi cần cân bằng giữa khám phá nhiều trạng thái và tiết kiệm tài nguyên.
+
+#### f. **Genetic Algorithm**
+- **Mô tả**: Dựa trên cơ chế tiến hóa, duy trì một tập hợp các giải pháp (population) và cải thiện chúng qua các thế hệ bằng cách sử dụng **crossover**, **mutation**, và **selection**.
+- **Cách hoạt động**:
+  1. Khởi tạo một tập hợp các giải pháp ngẫu nhiên (population).
+  2. Đánh giá chất lượng mỗi giải pháp bằng hàm mục tiêu (fitness function).
+  3. Chọn các giải pháp tốt (selection) để tạo thế hệ mới thông qua:
+     - **Crossover**: Kết hợp hai giải pháp để tạo giải pháp mới.
+     - **Mutation**: Thay đổi ngẫu nhiên một phần của giải pháp để tăng tính đa dạng.
+  4. Lặp lại qua nhiều thế hệ cho đến khi tìm được giải pháp đủ tốt hoặc đạt số thế hệ tối đa.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, nhưng có thể tìm giải pháp tốt nếu điều chỉnh tham số hợp lý.
+  - **Tối ưu**: Không, nhưng có khả năng tiến gần giải pháp toàn cục nhờ tính đa dạng của population.
+  - **Độ phức tạp**:
+    - Thời gian: Phụ thuộc vào kích thước population, số thế hệ, và chi phí đánh giá hàm mục tiêu.
+    - Không gian: O(p), với p là kích thước population.
+- **Ứng dụng**: Phù hợp cho các bài toán tối ưu hóa phức tạp như 8-puzzle, thiết kế, hoặc lập lịch, khi không gian trạng thái rất lớn.
+
+---
+
+### 3. **So sánh tổng quát**
+| Thuật toán                     | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|-------------------------------|------------|--------|-----------------------|------------------------|----------------|
+| **Simple Hill Climbing**      | Không      | Không  | O(k) mỗi bước        | O(1)                  | Tìm giải pháp nhanh, đơn giản |
+| **Steepest-Ascent Hill Climbing** | Không      | Không  | O(k) mỗi bước        | O(k)                  | Cải thiện giải pháp cục bộ |
+| **Stochastic Hill Climbing**  | Không      | Không  | O(k) mỗi bước        | O(k)                  | Tránh cực trị cục bộ nhẹ |
+| **Simulated Annealing**       | Không      | Không  | Phụ thuộc lịch trình | O(1)                  | Thoát cực trị cục bộ, tối ưu hóa |
+| **Local Beam Search**         | Không      | Không  | O(kb) mỗi bước       | O(k)                  | Khám phá nhiều trạng thái |
+| **Genetic Algorithm**         | Không      | Không  | Phụ thuộc population  | O(p)                  | Tối ưu hóa không gian lớn |
+
+---
+
+### 4. **Giải pháp tổng quát của Local Search**
+- **Quy trình chung**:
+  1. Chọn một trạng thái ban đầu (ngẫu nhiên hoặc cố định).
+  2. Xác định hàm mục tiêu (ví dụ: khoảng cách Manhattan trong 8-puzzle) để đánh giá chất lượng trạng thái.
+  3. Tạo và đánh giá các trạng thái lân cận, chọn hoặc chấp nhận trạng thái tiếp theo dựa trên chiến lược:
+     - **Simple Hill Climbing**: Chọn trạng thái lân cận đầu tiên tốt hơn.
+     - **Steepest-Ascent Hill Climbing**: Chọn trạng thái lân cận tốt nhất.
+     - **Stochastic Hill Climbing**: Chọn ngẫu nhiên trạng thái lân cận tốt hơn.
+     - **Simulated Annealing**: Chấp nhận trạng thái lân cận dựa trên xác suất liên quan đến nhiệt độ.
+     - **Local Beam Search**: Duy trì và mở rộng `k` trạng thái tốt nhất.
+     - **Genetic Algorithm**: Tiến hóa một tập hợp giải pháp qua selection, crossover, mutation.
+  4. Lặp lại cho đến khi đạt trạng thái mục tiêu, cực trị cục bộ, hoặc giới hạn tài nguyên (thời gian, số bước).
+- **Ưu điểm**:
+  - Tiết kiệm bộ nhớ, vì chỉ làm việc với trạng thái hiện tại hoặc một tập nhỏ trạng thái.
+  - Nhanh, đặc biệt khi không cần giải pháp tối ưu toàn cục.
+  - Phù hợp cho không gian trạng thái lớn, như 8-puzzle, khi khám phá toàn bộ không khả thi.
+- **Nhược điểm**:
+  - Không đảm bảo hoàn chỉnh hoặc tối ưu, dễ bị kẹt ở cực trị cục bộ (trừ Simulated Annealing và Genetic Algorithm, có khả năng thoát cục bộ).
+  - Hiệu quả phụ thuộc vào hàm mục tiêu và cách định nghĩa lân cận.
+- **Yêu cầu**:
+  - Hàm mục tiêu hiệu quả, phản ánh đúng chất lượng giải pháp.
+  - Cơ chế thoát khỏi cực trị cục bộ (như ngẫu nhiên hóa hoặc lịch trình nhiệt độ).
+  - Điều chỉnh tham số (nhiệt độ, kích thước beam, population, v.v.) để cân bằng giữa chất lượng và hiệu suất.
+    
+### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
+
+| **Thuật Toán**                           | **Minh Họa GIF**                                           |
+|-----------------------------------------|------------------------------------------------------------|
+| **Simple Hill Climbing**                | <img src="images/simple_hill_climbing.gif" width="500" alt="Simple Hill Climbing"> |
+| **Steepest-Ascent Hill Climbing**       | <img src="images/steepest_hill_climbing.gif" width="500" alt="Steepest Hill Climbing"> |
+| **Stochastic Hill Climbing**            | <img src="images/stochastic_hill_climbing.gif" width="500" alt="Stochastic Hill Climbing"> |
+| **Simulated Annealing**                 | <img src="images/simulated_annealing.gif" width="500" alt="Simulated Annealing"> |
+| **Local Beam Search**                   | <img src="images/local_beam_search.gif" width="500" alt="Local Beam Search"> |
+| **Genetic Algorithm**                   | <img src="images/genetic_algorithm.gif" width="500" alt="Genetic Algorithm"> |
 
 
+Dưới đây là phiên bản được **kẻ lại dưới dạng bảng Markdown** cho phần **"2. Bảng so sánh hiệu suất các thuật toán trong 8-puzzle"** với các **thuật toán tìm kiếm cục bộ (local search)**. Bạn có thể chép trực tiếp vào file `README.md`:
 
+---
 
+### 🔍 So sánh các thuật toán tìm kiếm cục bộ (Local Search Algorithms)
+
+| **Thuật Toán**                    | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian**     | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle**                                                          | **Ưu điểm**                                   | **Nhược điểm**                                       |
+| --------------------------------- | -------------- | ---------- | ----------------------------- | -------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------- |
+| **Simple Hill Climbing**          | Không          | Không      | `O(k)` mỗi bước               | `O(1)`                     | Nhanh, nhưng dễ kẹt ở cực trị cục bộ, kém hiệu quả khi cách xa mục tiêu.              | ✅ Nhanh, tiết kiệm bộ nhớ                     | ❌ Dễ kẹt, không đảm bảo tìm được lời giải tốt        |
+| **Steepest-Ascent Hill Climbing** | Không          | Không      | `O(k)` mỗi bước               | `O(k)`                     | Tốt hơn Simple, nhưng vẫn dễ kẹt ở cực trị cục bộ.                                    | ✅ Chọn lân cận tốt nhất, cải thiện chất lượng | ❌ Tốn thời gian hơn Simple, vẫn không đảm bảo tối ưu |
+| **Stochastic Hill Climbing**      | Không          | Không      | `O(k)` mỗi bước               | `O(k)`                     | Nhanh hơn Steepest, tránh được một số cực trị cục bộ.                                 | ✅ Ngẫu nhiên, nhanh                           | ❌ Vẫn dễ kẹt, không tối ưu                           |
+| **Simulated Annealing**           | Không          | Không      | Phụ thuộc lịch trình          | `O(1)`                     | Có thể thoát cực trị cục bộ, hiệu quả với trạng thái xa mục tiêu nếu tham số phù hợp. | ✅ Thoát cực trị cục bộ, tiết kiệm bộ nhớ      | ❌ Phụ thuộc tham số, tốc độ không ổn định            |
+| **Local Beam Search**             | Không          | Không      | `O(kb)` mỗi bước              | `O(k)`                     | Tốt hơn Hill Climbing, nhưng phụ thuộc nhiều vào `beam_width`.                        | ✅ Khám phá đồng thời nhiều trạng thái         | ❌ Dễ bỏ sót lời giải nếu beam nhỏ                    |
+| **Genetic Algorithm**             | Không          | Không      | Phụ thuộc population & thế hệ | `O(p)`                     | Hiệu quả nếu điều chỉnh tham số tốt, nhưng không đảm bảo tìm đúng lời giải.           | ✅ Khám phá không gian lớn, đa dạng lời giải   | ❌ Chậm, tốn tài nguyên, phụ thuộc nhiều vào tham số  |
+
+### **Chú thích:**
+
+* `k`: Số trạng thái lân cận (≈ 2–4 trong 8-puzzle, tùy vị trí ô trống).
+* `b`: Số nhánh trung bình trong không gian trạng thái.
+* `p`: Kích thước quần thể (*population size*) trong Genetic Algorithm.
+* **Hàm mục tiêu**: Khoảng cách Manhattan được dùng như một heuristic phổ biến, tuy nhiên **không đảm bảo tính hoàn chỉnh/tối ưu trong local search**.
+
+Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa ra nhận xét về hiệu suất của các thuật toán **Local Search** (**Simple Hill Climbing**, **Steepest-Ascent Hill Climbing**, **Stochastic Hill Climbing**, **Simulated Annealing**, **Local Beam Search**, và **Genetic Algorithm**) khi áp dụng vào bài toán **Sliding Puzzle 8 ô** (8-puzzle). Sau đó, tôi sẽ trình bày bảng so sánh chi tiết để minh họa các đặc điểm về hiệu suất, hoàn chỉnh, tối ưu, và độ phức tạp của các thuật toán này.
+
+### 📝 **Nhận xét chung:**
+- **Simple Hill Climbing**:
+  - Nhanh nhất trong nhóm, nhưng dễ bị kẹt ở cực trị cục bộ, đặc biệt trong 8-puzzle do không gian trạng thái phức tạp.
+  - Phù hợp khi cần kết quả nhanh với trạng thái ban đầu gần mục tiêu.
+- **Steepest-Ascent Hill Climbing**:
+  - Cải thiện so với Simple Hill Climbing bằng cách chọn lân cận tốt nhất, nhưng vẫn dễ bị kẹt.
+  - Trong 8-puzzle, hiệu quả hơn Simple nhưng không phù hợp cho các cấu hình phức tạp.
+- **Stochastic Hill Climbing**:
+  - Tính ngẫu nhiên giúp tránh một số cực trị cục bộ, nhưng vẫn không đảm bảo tìm được mục tiêu trong 8-puzzle.
+  - Nhanh hơn Steepest, nhưng hiệu quả phụ thuộc vào sự may mắn trong lựa chọn lân cận.
+- **Simulated Annealing**:
+  - Hiệu quả hơn Hill Climbing trong 8-puzzle nhờ khả năng thoát cực trị cục bộ, đặc biệt khi trạng thái ban đầu xa mục tiêu.
+  - Hiệu suất phụ thuộc vào lịch trình nhiệt độ; trong mã, tham số mặc định (cooling_rate=0.99) khá hợp lý nhưng cần thử nghiệm thêm.
+- **Local Beam Search**:
+  - Cải thiện so với Hill Climbing bằng cách duy trì nhiều trạng thái, nhưng hiệu quả phụ thuộc vào `beam_width`.
+  - Trong 8-puzzle, beam_width=3 có thể không đủ lớn để đảm bảo tìm mục tiêu trong không gian trạng thái lớn.
+- **Genetic Algorithm**:
+  - Phù hợp cho không gian trạng thái lớn, nhưng trong 8-puzzle, hiệu suất thấp hơn do chi phí tính toán cao và khó điều chỉnh tham số.
+  - Cách biểu diễn chuỗi di chuyển trong mã sáng tạo, nhưng không đảm bảo tìm mục tiêu chính xác.
 
 
 
