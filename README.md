@@ -555,7 +555,7 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 |----------------------------|----------------------------------------------------------|
 | **AND-OR Search Trees**    | <img src="images/and_or_search.gif" width="500" alt="AND-OR Search Trees"> |
 
-### 🔍 So sánh các thuật toán tìm kiếm với hành động không xác định (Search with Nondeterministic Actions)
+### 🔍 So sánh thuật toán tìm kiếm với hành động không xác định (Search with Nondeterministic Actions)
 
 | **Thuật toán**         | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian** | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle** | **Ưu điểm** | **Nhược điểm** |
 |-----------------------|----------------|------------|---------------------------|----------------------------|------------------------------|-------------|----------------|
@@ -572,6 +572,164 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
   - AND-OR Search Tree là lựa chọn phù hợp khi bài toán 8-puzzle được mở rộng để bao gồm yếu tố không xác định, như nhiễu môi trường hoặc hành động của đối thủ làm thay đổi trạng thái.
   - Trong mã, việc sử dụng khoảng cách Manhattan làm heuristic giúp thuật toán ưu tiên các hành động đưa trạng thái gần mục tiêu, cải thiện hiệu suất so với tìm kiếm không định hướng.
   - Tuy nhiên, thuật toán này không hiệu quả bằng các thuật toán xác định như A* hoặc IDA* trong 8-puzzle thông thường, vì nó phải xử lý nhiều kết quả không xác định, làm tăng chi phí tính toán.
+
+## Searching with no observation và Searching in partially observable environments
+
+### 1. **Searching with No Observation (Tìm kiếm không quan sát)**
+
+#### **Khái niệm chung**
+- **Searching with No Observation** áp dụng cho các bài toán trong môi trường mà tác nhân (agent) không nhận được thông tin về trạng thái hiện tại sau khi thực hiện hành động (không có quan sát hoặc cảm biến).
+- Tác nhân chỉ biết trạng thái ban đầu, tập hợp hành động, và mô hình chuyển đổi trạng thái (transition model), nhưng không thể quan sát trạng thái sau mỗi bước.
+- Mục tiêu là xây dựng một **kế hoạch hành động mở** (open-loop plan), tức là một chuỗi hành động cố định để đạt mục tiêu bất kể trạng thái thực tế.
+- Thường áp dụng trong môi trường xác định hoặc không xác định, nhưng không có thông tin phản hồi.
+
+#### **Các thành phần chính**
+- **Không gian trạng thái (State Space)**: Tập hợp tất cả các trạng thái có thể có (ví dụ: các hoán vị trong 8-puzzle).
+- **Trạng thái ban đầu (Initial State)**: Điểm xuất phát, giả định tác nhân biết trạng thái này.
+- **Trạng thái mục tiêu (Goal State)**: Trạng thái cần đạt được.
+- **Hành động (Actions)**: Các thao tác khả thi (ví dụ: di chuyển ô trống lên, xuống, trái, phải trong 8-puzzle).
+- **Mô hình chuyển đổi trạng thái (Transition Model)**: Quy tắc xác định trạng thái tiếp theo sau một hành động (có thể xác định hoặc không xác định).
+- **Tập niềm tin (Belief State)**: Vì không có quan sát, tác nhân duy trì một tập hợp các trạng thái có thể có (belief state) dựa trên trạng thái ban đầu và lịch sử hành động.
+- **Kế hoạch (Plan)**: Một chuỗi hành động cố định hoặc một chính sách (policy) đảm bảo đạt mục tiêu từ trạng thái ban đầu.
+
+#### **Giải pháp tổng quát**
+- **Mô tả**: 
+  - Tác nhân xây dựng một kế hoạch dựa trên mô hình chuyển đổi trạng thái, giả định rằng không có thông tin mới thu thập được trong quá trình thực hiện.
+  - Trong môi trường xác định, kế hoạch là một chuỗi hành động cố định.
+  - Trong môi trường không xác định, kế hoạch phải xem xét tất cả các trạng thái có thể có trong tập niềm tin (belief state).
+- **Cách hoạt động**:
+  1. **Khởi tạo**: Bắt đầu từ trạng thái ban đầu hoặc tập niềm tin ban đầu (chỉ chứa trạng thái ban đầu).
+  2. **Dự đoán trạng thái**: Dựa trên mô hình chuyển đổi, tính toán tập niềm tin mới sau mỗi hành động (bao gồm tất cả trạng thái có thể xảy ra).
+  3. **Lập kế hoạch**:
+     - Chọn chuỗi hành động dẫn tập niềm tin đến một trạng thái chứa mục tiêu.
+     - Trong môi trường không xác định, sử dụng kỹ thuật như **Belief-State Search** (tìm kiếm trong không gian tập niềm tin) để đảm bảo tất cả trạng thái trong tập niềm tin đều đạt mục tiêu.
+  4. **Thực thi**: Thực hiện chuỗi hành động mà không cần quan sát, hy vọng đạt mục tiêu.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn và tồn tại kế hoạch khả thi.
+  - **Tối ưu**: Có thể tối ưu nếu sử dụng hàm chi phí (ví dụ: số bước tối thiểu), nhưng khó trong môi trường không xác định.
+  - **Độ phức tạp**:
+    - **Thời gian**: O(|B|^d), với |B| là kích thước tập niềm tin và d là độ sâu kế hoạch.
+    - **Không gian**: O(|B|), để lưu trữ tập niềm tin.
+- **Ứng dụng**:
+  - Robotics trong môi trường không cảm biến (ví dụ: robot di chuyển trong bóng tối).
+  - 8-puzzle với giả định không quan sát trạng thái sau mỗi di chuyển (tác nhân chỉ biết trạng thái ban đầu và thực hiện chuỗi hành động cố định).
+- **Ví dụ trong 8-puzzle**:
+  - Tác nhân biết trạng thái ban đầu (ví dụ: `[2, 6, 5, 0, 8, 7, 4, 3, 1]`).
+  - Không quan sát trạng thái sau mỗi di chuyển, chỉ thực hiện chuỗi hành động cố định (ví dụ: "lên, trái, xuống").
+  - Kế hoạch phải đảm bảo trạng thái mục tiêu (`[1, 2, 3, 4, 5, 6, 7, 8, 0]`) nằm trong tập niềm tin cuối cùng.
+
+#### **Ưu và nhược điểm**
+- **Ưu điểm**:
+  - Đơn giản trong môi trường xác định, vì chỉ cần một chuỗi hành động cố định.
+  - Có thể xử lý môi trường không xác định bằng cách duy trì tập niềm tin.
+- **Nhược điểm**:
+  - Không hiệu quả nếu tập niềm tin lớn (trong 8-puzzle, tập niềm tin có thể lên đến 9!/2 trạng thái).
+  - Không tận dụng được thông tin mới, dẫn đến kế hoạch bảo thủ (overly cautious).
+  - Khó tối ưu trong môi trường không xác định do phải xử lý tất cả trạng thái có thể.
+
+---
+
+### 2. **Searching in Partially Observable Environments (Tìm kiếm trong môi trường quan sát một phần)**
+
+#### **Khái niệm chung**
+- **Searching in Partially Observable Environments** áp dụng cho các bài toán mà tác nhân nhận được một số thông tin quan sát (observation) sau mỗi hành động, nhưng không đủ để xác định trạng thái chính xác.
+- Tác nhân phải duy trì một **tập niềm tin** (belief state) dựa trên trạng thái ban đầu, lịch sử hành động, và các quan sát.
+- Mục tiêu là xây dựng một **kế hoạch có điều kiện** (contingency plan) hoặc chính sách (policy) để đạt mục tiêu, sử dụng thông tin quan sát để điều chỉnh hành động.
+- Thường được mô hình hóa dưới dạng **Partially Observable Markov Decision Process (POMDP)**.
+
+#### **Các thành phần chính**
+- **Không gian trạng thái (State Space)**: Tất cả các trạng thái có thể có.
+- **Trạng thái ban đầu (Initial State)**: Một trạng thái hoặc tập niềm tin ban đầu.
+- **Trạng thái mục tiêu (Goal State)**: Trạng thái cần đạt được.
+- **Hành động (Actions)**: Các thao tác khả thi.
+- **Mô hình chuyển đổi trạng thái (Transition Model)**: Xác suất hoặc quy tắc chuyển đổi giữa các trạng thái sau hành động.
+- **Quan sát (Observations)**: Thông tin mà tác nhân nhận được sau mỗi hành động (ví dụ: vị trí của một số ô trong 8-puzzle).
+- **Mô hình quan sát (Observation Model)**: Liên kết trạng thái với các quan sát có thể (ví dụ: xác suất nhận được quan sát O trong trạng thái S).
+- **Tập niềm tin (Belief State)**: Một phân phối xác suất hoặc tập hợp các trạng thái có thể, cập nhật dựa trên hành động và quan sát.
+- **Kế hoạch (Plan)**: Một chính sách hoặc cây có điều kiện, ánh xạ tập niềm tin đến hành động hoặc chuỗi hành động.
+
+#### **Giải pháp tổng quát**
+- **Mô tả**:
+  - Tác nhân duy trì một tập niềm tin và cập nhật nó sau mỗi hành động và quan sát, sử dụng **lọc Bayes** (Bayesian filtering) hoặc các phương pháp tương tự.
+  - Kế hoạch là một chính sách (policy) ánh xạ từ tập niềm tin đến hành động, hoặc một cây có điều kiện dựa trên các quan sát nhận được.
+  - Thuật toán thường sử dụng **Belief-State Search** hoặc các kỹ thuật như POMDP để tìm kế hoạch tối ưu.
+- **Cách hoạt động**:
+  1. **Khởi tạo**: Bắt đầu với tập niềm tin ban đầu (có thể là một trạng thái hoặc phân phối xác suất).
+  2. **Cập nhật tập niềm tin**:
+     - Sau mỗi hành động, dự đoán tập niềm tin mới dựa trên mô hình chuyển đổi.
+     - Sau mỗi quan sát, cập nhật tập niềm tin bằng cách loại bỏ các trạng thái không phù hợp (hoặc điều chỉnh xác suất trong POMDP).
+  3. **Lập kế hoạch**:
+     - Tìm kiếm trong không gian tập niềm tin, sử dụng heuristic (như khoảng cách Manhattan trung bình trong tập niềm tin) để ưu tiên hành động.
+     - Xây dựng cây có điều kiện: "Thực hiện hành động A; nếu nhận quan sát O1, làm X; nếu nhận O2, làm Y."
+  4. **Thực thi**:
+     - Thực hiện hành động, nhận quan sát, cập nhật tập niềm tin, và lặp lại cho đến khi tập niềm tin chỉ chứa trạng thái mục tiêu.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái và quan sát hữu hạn, và tồn tại kế hoạch khả thi.
+  - **Tối ưu**: Có thể tối ưu nếu sử dụng hàm chi phí và giải POMDP chính xác, nhưng thường phải xấp xỉ do độ phức tạp cao.
+  - **Độ phức tạp**:
+    - **Thời gian**: O(|B|^d), với |B| là số tập niềm tin có thể (có thể rất lớn, thậm chí vô hạn nếu tập niềm tin là phân phối liên tục).
+    - **Không gian**: O(|B|), để lưu trữ tập niềm tin và cây kế hoạch.
+- **Ứng dụng**:
+  - Robotics với cảm biến hạn chế (ví dụ: robot định vị với GPS không chính xác).
+  - Trò chơi với thông tin không đầy đủ.
+  - 8-puzzle với quan sát một phần (ví dụ: chỉ thấy vị trí của một số ô sau mỗi di chuyển).
+- **Ví dụ trong 8-puzzle**:
+  - Tác nhân chỉ thấy vị trí của ô trống hoặc một số ô sau mỗi di chuyển.
+  - Duy trì tập niềm tin về các trạng thái có thể, cập nhật dựa trên quan sát (ví dụ: "ô trống ở vị trí (2,2)").
+  - Xây dựng kế hoạch: "Di chuyển lên; nếu ô trống ở (1,2), di chuyển trái; nếu ở (2,1), di chuyển xuống."
+
+#### **Ưu và nhược điểm**
+- **Ưu điểm**:
+  - Tận dụng thông tin quan sát để thu hẹp tập niềm tin, hiệu quả hơn tìm kiếm không quan sát.
+  - Linh hoạt, có thể xử lý môi trường xác định hoặc không xác định.
+- **Nhược điểm**:
+  - Độ phức tạp cao, đặc biệt khi không gian tập niềm tin lớn hoặc quan sát phức tạp.
+  - Yêu cầu mô hình quan sát và chuyển đổi chính xác, khó triển khai trong thực tế.
+  - Giải POMDP chính xác thường không khả thi, cần xấp xỉ.
+
+---
+
+### 3. **So sánh tổng quát**
+| Nhóm thuật toán                          | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|------------------------------------------|------------|--------|-----------------------|------------------------|----------------|
+| **Searching with No Observation**        | Có (nếu hữu hạn) | Có (trong môi trường xác định) | O(|B|^d)             | O(|B|)                | Robotics không cảm biến, 8-puzzle không quan sát |
+| **Searching in Partially Observable Environments** | Có (nếu hữu hạn) | Có (nếu giải POMDP) | O(|B|^d)             | O(|B|)                | Robotics với cảm biến hạn chế, trò chơi, 8-puzzle với quan sát một phần |
+
+**Ghi chú**:
+- **|B|**: Kích thước không gian tập niềm tin, có thể rất lớn trong môi trường phức tạp.
+- **d**: Độ sâu kế hoạch hoặc số bước cần thiết để đạt mục tiêu.
+
+### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
+
+| **Thuật Toán / Phương pháp**                        | **Minh Họa GIF**                                                       |
+|-----------------------------------------------------|------------------------------------------------------------------------|
+| **Searching with No Observation**                  | <img src="images/no_observation_search.gif" width="500" alt="No Observation Search"> |
+| **Searching in Partially Observable Environments** | <img src="images/partial_observation_search.gif" width="500" alt="Partially Observable Search"> |
+
+### 🔍 So sánh các thuật toán tìm kiếm với môi trường không quan sát (Searching with No Observation) và tìm kiếm với môi trường không quan sát một phần (Searching in Partially Observable Environments)
+
+| **Thuật toán**                          | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian** | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle** | **Ưu điểm** | **Nhược điểm** |
+|-----------------------------------------|----------------|------------|---------------------------|----------------------------|------------------------------|-------------|----------------|
+| **Searching with No Observation**       | Có (nếu hữu hạn) | Không      | O(\|B\|^d)               | O(\|B\|)                  | Hiệu quả thấp, phù hợp khi không có cảm biến, nhưng tốn tài nguyên nếu tập niềm tin lớn. | Đơn giản, xử lý môi trường không quan sát. | Tập niềm tin lớn, không tối ưu, không tận dụng thông tin. |
+| **Searching in Partially Observable Environments** | Có (nếu hữu hạn) | Không      | O(\|B\|^d)               | O(\|B\|)                  | Hiệu quả hơn No Observation, phụ thuộc vào chất lượng quan sát. Tốt khi quan sát mạnh. | Tận dụng quan sát, linh hoạt. | Độ phức tạp cao, phụ thuộc mô hình quan sát, không tối ưu. |
+
+**Ghi chú**:
+- **|B|**: Kích thước không gian tập niềm tin, có thể lên đến 9!/2 (≈ 181,440) trong 8-puzzle nếu không có hoặc ít quan sát.
+- **d**: Độ sâu kế hoạch hoặc số bước cần thiết để đạt mục tiêu.
+- **Heuristic**: Khoảng cách Manhattan được sử dụng trong mã, giúp ưu tiên hành động nhưng không đảm bảo tối ưu trong môi trường không xác định.
+
+### 3. **Nhận xét chung**
+- **Searching with No Observation**:
+  - Phù hợp cho các kịch bản 8-puzzle không có cảm biến, nhưng hiệu suất thấp do tập niềm tin có thể mở rộng nhanh chóng (đặc biệt trong môi trường không xác định).
+  - Trong mã, việc sử dụng khoảng cách Manhattan làm heuristic giúp giảm số hành động cần xem xét, nhưng vẫn không thể cạnh tranh với các thuật toán như A* trong môi trường xác định.
+  - Chỉ thực sự hữu ích khi mô hình chuyển đổi đơn giản và số trạng thái trong tập niềm tin được kiểm soát.
+- **Searching in Partially Observable Environments**:
+  - Hiệu quả hơn Searching with No Observation nhờ tận dụng quan sát để thu hẹp tập niềm tin.
+  - Trong 8-puzzle, hiệu suất phụ thuộc vào chất lượng quan sát. Nếu quan sát mạnh (ví dụ: biết vị trí ô trống và một số ô), thuật toán có thể gần với hiệu suất của A*. Nếu quan sát yếu, tập niềm tin vẫn lớn, dẫn đến chi phí tính toán cao.
+  - Trong mã, việc cập nhật tập niềm tin và xây dựng kế hoạch có điều kiện là phù hợp, nhưng yêu cầu mô hình quan sát chính xác.
+- **Tình huống phù hợp**:
+  - **No Observation**: Hữu ích khi 8-puzzle được mô hình hóa không có cảm biến (ví dụ: tác nhân chỉ biết trạng thái ban đầu và thực hiện chuỗi di chuyển cố định).
+  - **Partially Observable**: Phù hợp khi có quan sát một phần (ví dụ: biết vị trí ô trống), đặc biệt trong các kịch bản thực tế như robotics hoặc trò chơi với thông tin hạn chế.
 
 
 ## 👨‍💻 Tác giả
