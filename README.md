@@ -730,6 +730,243 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Tình huống phù hợp**:
   - **No Observation**: Hữu ích khi 8-puzzle được mô hình hóa không có cảm biến (ví dụ: tác nhân chỉ biết trạng thái ban đầu và thực hiện chuỗi di chuyển cố định).
   - **Partially Observable**: Phù hợp khi có quan sát một phần (ví dụ: biết vị trí ô trống), đặc biệt trong các kịch bản thực tế như robotics hoặc trò chơi với thông tin hạn chế.
+    
+### Constraint Satisfaction Problems
+
+### 1. **Khái niệm chung về Constraint Satisfaction Problems (CSPs)**
+- **Constraint Satisfaction Problems (CSPs)** là một cách biểu diễn bài toán tìm kiếm, trong đó mục tiêu là gán giá trị cho các biến sao cho thỏa mãn một tập hợp các ràng buộc (constraints).
+- CSPs thường được sử dụng trong các bài toán có cấu trúc ràng buộc rõ ràng, như lập lịch, tô màu bản đồ, hoặc giải câu đố logic.
+- Thay vì tìm kiếm trực tiếp trong không gian trạng thái, CSPs biểu diễn bài toán dưới dạng **biến**, **miền giá trị**, và **ràng buộc**, sau đó sử dụng các kỹ thuật như AC-3 và Backtracking để tìm giải pháp.
+
+---
+
+### 2. **Các thành phần chính của CSPs**
+- **Biến (Variables)**: Các đối tượng cần gán giá trị (ví dụ: trong 8-puzzle, mỗi ô có thể được xem là một biến đại diện cho giá trị tại vị trí đó).
+- **Miền giá trị (Domains)**: Tập hợp các giá trị khả thi cho mỗi biến (ví dụ: trong 8-puzzle, miền giá trị là {0, 1, 2, ..., 8}, với 0 là ô trống).
+- **Ràng buộc (Constraints)**: Các điều kiện phải thỏa mãn giữa các biến, có thể là:
+  - **Ràng buộc đơn (Unary Constraints)**: Liên quan đến một biến (ví dụ: ô ở vị trí (1,1) không thể là 0).
+  - **Ràng buộc đôi (Binary Constraints)**: Liên quan đến hai biến (ví dụ: hai ô không thể có cùng giá trị).
+  - **Ràng buộc toàn cục (Global Constraints)**: Liên quan đến nhiều biến (ví dụ: tất cả các ô phải tạo thành một hoán vị hợp lệ).
+- **Trạng thái mục tiêu (Solution)**: Một gán giá trị đầy đủ (assignment) cho tất cả các biến, thỏa mãn tất cả các ràng buộc.
+- **Không gian trạng thái**: Tập hợp tất cả các gán giá trị có thể cho các biến, giới hạn bởi miền giá trị và ràng buộc.
+
+---
+
+### 3. **Giải pháp tổng quát của CSPs**
+
+#### **a. AC-3 (Arc Consistency Algorithm)**
+- **Mô tả**:
+  - AC-3 là một thuật toán tiền xử lý (preprocessing) dùng để giảm miền giá trị của các biến bằng cách đảm bảo **tính nhất quán cung** (arc consistency).
+  - Một cung (arc) giữa hai biến \(X_i\) và \(X_j\) là nhất quán nếu với mỗi giá trị trong miền của \(X_i\), tồn tại ít nhất một giá trị trong miền của \(X_j\) thỏa mãn ràng buộc giữa chúng.
+  - AC-3 loại bỏ các giá trị không thỏa mãn ràng buộc, thu hẹp miền giá trị để giảm không gian tìm kiếm trước khi áp dụng thuật toán tìm kiếm chính (như Backtracking).
+- **Cách hoạt động**:
+  1. **Khởi tạo**: Tạo một hàng đợi chứa tất cả các cung (arcs) tương ứng với các ràng buộc đôi trong CSP.
+  2. **Xử lý cung**:
+     - Lấy một cung \((X_i, X_j)\) từ hàng đợi.
+     - Kiểm tra tính nhất quán của cung: Với mỗi giá trị trong miền của \(X_i\), đảm bảo tồn tại giá trị trong miền của \(X_j\) thỏa mãn ràng buộc.
+     - Nếu một giá trị trong miền của \(X_i\) không thỏa mãn, loại bỏ giá trị đó.
+  3. **Cập nhật hàng đợi**:
+     - Nếu miền của \(X_i\) bị thay đổi, thêm tất cả các cung liên quan đến \(X_i\) (như \((X_k, X_i)\)) vào hàng đợi để kiểm tra lại.
+  4. **Kết thúc**:
+     - Tiếp tục cho đến khi hàng đợi rỗng (miền đã nhất quán) hoặc một miền trở nên rỗng (không có giải pháp).
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Không, AC-3 chỉ là tiền xử lý, không đảm bảo tìm giải pháp mà chỉ giảm kích thước miền.
+  - **Tối ưu**: Không liên quan, vì AC-3 không tìm giải pháp mà chỉ tối ưu không gian tìm kiếm.
+  - **Độ phức tạp**:
+    - **Thời gian**: O(e * d^3) trong trường hợp xấu nhất, với e là số cung và d là kích thước miền lớn nhất.
+    - **Không gian**: O(e), để lưu hàng đợi các cung.
+- **Ứng dụng**:
+  - Tiền xử lý cho các bài toán CSP như 8-puzzle, tô màu bản đồ, hoặc lập lịch, giúp giảm miền giá trị trước khi tìm kiếm.
+  - Trong 8-puzzle, AC-3 có thể đảm bảo rằng các ô lân cận có giá trị phù hợp với các ràng buộc về hoán vị.
+
+#### **b. Backtracking Search**
+- **Mô tả**:
+  - Backtracking Search là một thuật toán tìm kiếm đệ quy, gán giá trị cho các biến một cách tuần tự và quay lui (backtrack) khi gặp gán không thỏa mãn ràng buộc.
+  - Thường được cải tiến với các kỹ thuật như chọn biến thông minh (most constrained variable), chọn giá trị tối ưu (least constraining value), và kiểm tra ràng buộc sớm (forward checking).
+- **Cách hoạt động**:
+  1. **Khởi tạo**: Bắt đầu với một gán rỗng (không biến nào được gán giá trị).
+  2. **Chọn biến**: Chọn một biến chưa được gán (có thể dùng tiêu chí như biến có miền nhỏ nhất để giảm số nhánh).
+  3. **Gán giá trị**: Thử từng giá trị trong miền của biến, kiểm tra xem gán này có thỏa mãn tất cả ràng buộc liên quan không.
+  4. **Đệ quy**:
+     - Nếu gán hợp lệ, chuyển sang biến tiếp theo và lặp lại.
+     - Nếu gán không hợp lệ hoặc không dẫn đến giải pháp, quay lui để thử giá trị khác cho biến hiện tại.
+  5. **Kết thúc**:
+     - Trả về gán đầy đủ thỏa mãn tất cả ràng buộc hoặc kết luận không có giải pháp.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn, Backtracking sẽ tìm được giải pháp hoặc xác định không có giải pháp.
+  - **Tối ưu**: Có thể tối ưu nếu sử dụng tiêu chí chọn giá trị dựa trên chi phí (nhưng thường không áp dụng trong CSP cơ bản).
+  - **Độ phức tạp**:
+    - **Thời gian**: O(d^n) trong trường hợp xấu nhất, với n là số biến và d là kích thước miền lớn nhất.
+    - **Không gian**: O(n), để lưu trạng thái gán hiện tại trong tìm kiếm đệ quy.
+- **Ứng dụng**:
+  - Giải các bài toán CSP như 8-puzzle, Sudoku, hoặc lập lịch.
+  - Trong 8-puzzle, Backtracking có thể gán giá trị cho các ô (hoặc chuỗi di chuyển) để đạt trạng thái mục tiêu, nhưng thường cần kết hợp với AC-3 để giảm không gian tìm kiếm.
+
+---
+
+### 4. **Giải pháp tổng quát của CSPs**
+- **Quy trình chung**:
+  1. **Biểu diễn bài toán**:
+     - Xác định các biến, miền giá trị, và ràng buộc.
+     - Ví dụ trong 8-puzzle: 9 biến (mỗi ô), miền giá trị {0, 1, ..., 8}, ràng buộc là các ô phải tạo thành hoán vị hợp lệ và thỏa mãn cấu trúc lưới.
+  2. **Tiền xử lý với AC-3**:
+     - Áp dụng AC-3 để thu hẹp miền giá trị, loại bỏ các giá trị không thỏa mãn ràng buộc đôi.
+     - Giảm kích thước không gian tìm kiếm trước khi chạy Backtracking.
+  3. **Tìm kiếm với Backtracking**:
+     - Gán giá trị cho các biến một cách tuần tự, kiểm tra ràng buộc, và quay lui khi cần.
+     - Sử dụng các kỹ thuật tối ưu như:
+       - **Most Constrained Variable**: Chọn biến có miền nhỏ nhất để gán trước.
+       - **Least Constraining Value**: Chọn giá trị ít hạn chế các biến khác.
+       - **Forward Checking**: Kiểm tra ràng buộc ngay sau mỗi gán để phát hiện sớm các nhánh không khả thi.
+  4. **Kết quả**:
+     - Trả về gán đầy đủ thỏa mãn tất cả ràng buộc hoặc kết luận không có giải pháp.
+- **Ưu điểm**:
+  - Cấu trúc rõ ràng, dễ biểu diễn các bài toán có ràng buộc.
+  - AC-3 giảm đáng kể không gian tìm kiếm, cải thiện hiệu suất Backtracking.
+  - Backtracking linh hoạt, có thể kết hợp với nhiều kỹ thuật tối ưu.
+- **Nhược điểm**:
+  - AC-3 không đảm bảo tìm giải pháp, chỉ là tiền xử lý.
+  - Backtracking có thể chậm trong trường hợp xấu nhất (O(d^n)), đặc biệt khi không gian tìm kiếm lớn.
+  - Trong các bài toán như 8-puzzle, biểu diễn CSP có thể phức tạp hơn so với tìm kiếm trạng thái (state-space search).
+
+---
+
+### 5. **So sánh tổng quát**
+| Thuật toán         | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|--------------------|------------|--------|-----------------------|------------------------|----------------|
+| **AC-3**           | Không      | Không  | O(e * d^3)           | O(e)                  | Tiền xử lý CSP, giảm miền giá trị (8-puzzle, Sudoku, lập lịch) |
+| **Backtracking**   | Có         | Không (trừ khi tối ưu hóa) | O(d^n)           | O(n)                  | Giải CSP, tìm gán đầy đủ (8-puzzle, tô màu bản đồ) |
+
+**Ghi chú**:
+- **e**: Số cung (ràng buộc đôi) trong CSP.
+- **d**: Kích thước miền lớn nhất.
+- **n**: Số biến trong CSP.
+- 
+### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
+
+| **Thuật Toán**             | **Minh Họa GIF**                                                |
+|----------------------------|-----------------------------------------------------------------|
+| **AC-3 and A\***           | <img src="images/ac3_astar.gif" width="500" alt="AC-3 and A*">  |
+| **Backtracking**           | <img src="images/backtracking.gif" width="500" alt="Backtracking"> |
+
+## Reinforcement Learning
+
+### 1. **Khái niệm chung về Reinforcement Learning và Q-Learning**
+- **Reinforcement Learning (RL)** là một phương pháp học máy, trong đó một tác nhân (agent) học cách đưa ra quyết định bằng cách thử và sai trong một môi trường động, nhằm tối đa hóa phần thưởng tích lũy (cumulative reward).
+- **Q-Learning** là một thuật toán RL không dựa trên mô hình (model-free), thuộc nhóm **Temporal Difference (TD) Learning**, học một chính sách tối ưu thông qua việc ước lượng giá trị hành động (action-value function) mà không cần biết mô hình chuyển đổi trạng thái của môi trường.
+- Mục tiêu của Q-Learning là tìm một chính sách (policy) ánh xạ từ trạng thái đến hành động, sao cho tối đa hóa phần thưởng dài hạn trong môi trường không xác định hoặc xác định.
+
+---
+
+### 2. **Các thành phần chính của Q-Learning**
+- **Tác nhân (Agent)**: Thực thể đưa ra quyết định và học từ môi trường (ví dụ: tác nhân di chuyển ô trống trong 8-puzzle).
+- **Môi trường (Environment)**: Không gian mà tác nhân tương tác, bao gồm tất cả trạng thái, hành động, và phần thưởng (ví dụ: lưới 3x3 của 8-puzzle với các trạng thái hoán vị).
+- **Trạng thái (State, S)**: Một mô tả của môi trường tại một thời điểm (ví dụ: một hoán vị cụ thể của các ô trong 8-puzzle, như `[2, 6, 5, 0, 8, 7, 4, 3, 1]`).
+- **Hành động (Action, A)**: Các lựa chọn mà tác nhân có thể thực hiện từ một trạng thái (ví dụ: di chuyển ô trống lên, xuống, trái, phải).
+- **Phần thưởng (Reward, R)**: Phản hồi số từ môi trường sau mỗi hành động, định lượng mức độ tốt của hành động (ví dụ: +1 khi đạt trạng thái mục tiêu, -1 cho mỗi bước di chuyển, hoặc 0 nếu không đạt mục tiêu).
+- **Chính sách (Policy, π)**: Chiến lược của tác nhân, ánh xạ từ trạng thái đến hành động (ví dụ: chọn hành động có giá trị Q cao nhất).
+- **Hàm giá trị hành động (Q-Value, Q(s, a))**: Ước lượng phần thưởng tích lũy kỳ vọng khi thực hiện hành động `a` từ trạng thái `s` và theo chính sách tối ưu sau đó.
+- **Mô hình chuyển đổi (Transition Model)**: Không cần thiết trong Q-Learning, vì thuật toán học trực tiếp từ kinh nghiệm (model-free).
+- **Tỷ lệ học (Learning Rate, α)**: Quy định mức độ cập nhật giá trị Q sau mỗi kinh nghiệm (0 < α ≤ 1).
+- **Hệ số chiết khấu (Discount Factor, γ)**: Quy định tầm quan trọng của phần thưởng tương lai so với phần thưởng hiện tại (0 ≤ γ ≤ 1).
+- **Chiến lược khám phá (Exploration Strategy)**: Thường sử dụng **ε-greedy**, cân bằng giữa khám phá (exploration) và khai thác (exploitation) để thử các hành động mới hoặc chọn hành động tốt nhất.
+
+---
+
+### 3. **Giải pháp tổng quát của Q-Learning**
+
+#### **Mô tả**
+- Q-Learning học một hàm giá trị hành động \( Q(s, a) \) bằng cách cập nhật giá trị Q dựa trên phần thưởng nhận được và giá trị Q của trạng thái tiếp theo, sử dụng phương pháp **Temporal Difference (TD)**.
+- Thuật toán không cần biết mô hình môi trường (chuyển đổi trạng thái hoặc phân phối phần thưởng), mà học trực tiếp từ các mẫu kinh nghiệm (state, action, reward, next state).
+- Mục tiêu là tìm chính sách tối ưu \( \pi^*(s) = \arg\max_a Q^*(s, a) \), chọn hành động có giá trị Q cao nhất từ mỗi trạng thái.
+
+#### **Cách hoạt động**
+1. **Khởi tạo**:
+   - Khởi tạo bảng Q (Q-table) với các giá trị ban đầu (thường là 0) cho tất cả cặp trạng thái-hành động \( (s, a) \).
+   - Đặt các tham số: tỷ lệ học \( \alpha \), hệ số chiết khấu \( \gamma \), và tham số khám phá \( \varepsilon \) (cho chiến lược ε-greedy).
+
+2. **Lặp qua các episode**:
+   - Một episode là một chuỗi hành động từ trạng thái ban đầu đến trạng thái kết thúc (ví dụ: đạt trạng thái mục tiêu hoặc vượt quá số bước tối đa).
+   - Trong mỗi episode:
+     a. **Chọn hành động**:
+        - Với xác suất \( \varepsilon \), chọn hành động ngẫu nhiên (khám phá).
+        - Với xác suất \( 1 - \varepsilon \), chọn hành động có giá trị Q cao nhất: \( a = \arg\max_a Q(s, a) \) (khai thác).
+     b. **Thực hiện hành động**:
+        - Thực hiện hành động \( a \), nhận phần thưởng \( r \) và chuyển sang trạng thái tiếp theo \( s' \).
+     c. **Cập nhật giá trị Q**:
+        - Sử dụng công thức cập nhật Q-Learning:
+          \[
+          Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]
+          \]
+          - \( r \): Phần thưởng nhận được.
+          - \( \max_{a'} Q(s', a') \): Giá trị Q tối đa từ trạng thái tiếp theo.
+          - \( \alpha \): Tỷ lệ học, điều chỉnh mức độ cập nhật.
+          - \( \gamma \): Hệ số chiết khấu, cân nhắc phần thưởng tương lai.
+     d. **Chuyển sang trạng thái tiếp theo**: Đặt \( s = s' \) và lặp lại cho đến khi episode kết thúc.
+
+3. **Giảm khám phá**:
+   - Giảm dần \( \varepsilon \) (ε-decay) để chuyển từ khám phá sang khai thác, giúp tác nhân tập trung vào chính sách tối ưu khi học đủ lâu.
+
+4. **Kết thúc**:
+   - Sau nhiều episode, bảng Q hội tụ đến \( Q^* \), biểu diễn giá trị hành động tối ưu.
+   - Chính sách tối ưu được suy ra: \( \pi^*(s) = \arg\max_a Q^*(s, a) \).
+
+#### **Đặc điểm**
+- **Hoàn chỉnh**: Không đảm bảo hoàn chỉnh trong không gian trạng thái vô hạn hoặc nếu không khám phá đủ. Trong không gian hữu hạn (như 8-puzzle), Q-Learning hội tụ đến chính sách tối ưu nếu tất cả cặp trạng thái-hành động được thăm đủ nhiều lần.
+- **Tối ưu**: Có, Q-Learning tìm chính sách tối ưu nếu hội tụ (với \( \alpha \) và \( \varepsilon \) được điều chỉnh phù hợp).
+- **Độ phức tạp**:
+  - **Thời gian**: Phụ thuộc vào số episode, số trạng thái \( |S| \), và số hành động \( |A| \). Trong trường hợp xấu, cần O(|S| * |A|) cập nhật cho mỗi episode.
+  - **Không gian**: O(|S| * |A|) để lưu bảng Q.
+- **Ứng dụng**:
+  - Các bài toán điều khiển (robotics, trò chơi).
+  - 8-puzzle với mục tiêu học cách di chuyển ô trống để đạt trạng thái mục tiêu.
+  - Các môi trường có phần thưởng thưa thớt hoặc không xác định.
+
+#### **Ví dụ trong 8-puzzle**
+- **Trạng thái**: Một hoán vị của lưới 3x3 (ví dụ: `[1, 2, 3, 4, 0, 5, 6, 7, 8]`).
+- **Hành động**: Di chuyển ô trống (lên, xuống, trái, phải).
+- **Phần thưởng**:
+  - +100 khi đạt trạng thái mục tiêu (`[1, 2, 3, 4, 5, 6, 7, 8, 0]`).
+  - -1 cho mỗi bước di chuyển (khuyến khích đường đi ngắn).
+  - 0 cho các trạng thái không phải mục tiêu.
+- **Q-Learning**:
+  - Tác nhân học bảng Q ánh xạ mỗi trạng thái-hành động đến giá trị kỳ vọng.
+  - Sau khi học, chọn hành động \( \arg\max_a Q(s, a) \) từ mỗi trạng thái để đạt mục tiêu.
+
+---
+
+### 4. **Ưu điểm và nhược điểm**
+
+#### **Ưu điểm**
+- **Model-free**: Không cần biết mô hình chuyển đổi trạng thái, phù hợp với môi trường không xác định.
+- **Học trực tiếp từ kinh nghiệm**: Dễ triển khai trong các môi trường phức tạp.
+- **Chính sách tối ưu**: Hội tụ đến chính sách tối ưu nếu khám phá đủ.
+- **Linh hoạt**: Áp dụng được cho nhiều bài toán, từ trò chơi đến điều khiển robot.
+
+#### **Nhược điểm**
+- **Hiệu suất chậm**: Yêu cầu nhiều episode để hội tụ, đặc biệt trong không gian trạng thái lớn (8-puzzle có 9!/2 ≈ 181,440 trạng thái).
+- **Khám phá không hiệu quả**: Chiến lược ε-greedy có thể bỏ lỡ các trạng thái quan trọng trong không gian lớn.
+- **Phần thưởng thưa thớt**: Trong 8-puzzle, nếu phần thưởng chỉ có khi đạt mục tiêu, việc học sẽ chậm.
+- **Bảng Q lớn**: Trong các bài toán phức tạp, lưu trữ bảng Q tốn bộ nhớ, đặc biệt nếu \( |S| \) và \( |A| \) lớn.
+
+---
+
+### 5. **So sánh tổng quát**
+| Thuật toán    | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|---------------|------------|--------|-----------------------|------------------------|----------------|
+| **Q-Learning** | Có (nếu khám phá đủ) | Có (khi hội tụ) | O(\|S\| * \|A\| * episodes) | O(\|S\| * \|A\|) | Trò chơi, robotics, 8-puzzle, điều khiển |
+
+**Ghi chú**:
+- **|S|**: Số trạng thái.
+- **|A|**: Số hành động.
+- **episodes**: Số vòng lặp học.
+
+### 📷 **Hình ảnh thuật toán được áp dụng trong trò chơi**
+
+| **Quá trình**             | **Minh Họa GIF**                                                |
+|----------------------------|-----------------------------------------------------------------|
+| **Học**           | <img src="images/QLearning.gif" width="500" alt="AC-3 and A*">  |
+| **Giải**           | <img src="images/QLearning_solve.gif" width="500" alt="Backtracking"> |
 
 
 ## 👨‍💻 Tác giả
