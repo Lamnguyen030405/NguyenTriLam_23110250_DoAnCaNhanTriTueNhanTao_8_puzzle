@@ -424,10 +424,6 @@ Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***
 | **Genetic Algorithm**                   | <img src="images/genetic_algorithm.gif" width="500" alt="Genetic Algorithm"> |
 
 
-Dưới đây là phiên bản được **kẻ lại dưới dạng bảng Markdown** cho phần **"2. Bảng so sánh hiệu suất các thuật toán trong 8-puzzle"** với các **thuật toán tìm kiếm cục bộ (local search)**. Bạn có thể chép trực tiếp vào file `README.md`:
-
----
-
 ### 🔍 So sánh các thuật toán tìm kiếm cục bộ (Local Search Algorithms)
 
 | **Thuật Toán**                    | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian**     | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle**                                                          | **Ưu điểm**                                   | **Nhược điểm**                                       |
@@ -468,8 +464,114 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
   - Phù hợp cho không gian trạng thái lớn, nhưng trong 8-puzzle, hiệu suất thấp hơn do chi phí tính toán cao và khó điều chỉnh tham số.
   - Cách biểu diễn chuỗi di chuyển trong mã sáng tạo, nhưng không đảm bảo tìm mục tiêu chính xác.
 
+## Search with Nondeterministic Actions
+
+---
+
+### 1. **Khái niệm chung về Search with Nondeterministic Actions**
+- **Search with Nondeterministic Actions** giải quyết các bài toán trong môi trường mà kết quả của một hành động không xác định (một hành động có thể dẫn đến nhiều trạng thái khác nhau).
+- Thay vì tìm một chuỗi hành động cố định, thuật toán tìm một **kế hoạch** (plan) có thể xử lý mọi kết quả có thể xảy ra, thường được biểu diễn dưới dạng cây hoặc đồ thị.
+- **AND-OR Search Trees** là một phương pháp chính để giải quyết bài toán này, mô phỏng hai loại nút:
+  - **OR nodes**: Đại diện cho các lựa chọn của tác nhân (agent), nơi tác nhân chọn hành động tốt nhất.
+  - **AND nodes**: Đại diện cho các kết quả không xác định của môi trường, nơi tất cả các kết quả phải được xử lý để đảm bảo kế hoạch thành công.
+- **Mục tiêu**: Xây dựng một kế hoạch có điều kiện (contingency plan) đảm bảo đạt được trạng thái mục tiêu bất kể kết quả không xác định nào xảy ra.
+
+ **Các thành phần chính của AND-OR Search Trees**
+- **Không gian trạng thái (State Space)**: Tập hợp tất cả các trạng thái có thể có của bài toán (ví dụ: các hoán vị của ô trong 8-puzzle).
+- **Trạng thái ban đầu (Initial State)**: Điểm xuất phát của bài toán.
+- **Trạng thái mục tiêu (Goal State)**: Trạng thái cần đạt được.
+- **Hành động (Actions)**: Các thao tác mà tác nhân có thể thực hiện (ví dụ: di chuyển ô trống lên, xuống, trái, phải trong 8-puzzle).
+- **Kết quả không xác định (Nondeterministic Outcomes)**: Mỗi hành động có thể dẫn đến nhiều trạng thái khác nhau do môi trường không xác định (ví dụ: một hành động có thể bị ảnh hưởng bởi nhiễu hoặc tác nhân đối thủ).
+- **Kế hoạch (Plan)**: Một cấu trúc dạng cây hoặc đồ thị, bao gồm:
+  - **OR nodes**: Tác nhân chọn một hành động từ tập hành động khả thi.
+  - **AND nodes**: Môi trường trả về một tập hợp các trạng thái có thể xảy ra, và kế hoạch phải giải quyết tất cả các trạng thái này.
+- **Hàm đánh giá (Evaluation Function)**: Có thể sử dụng heuristic (như khoảng cách Manhattan trong 8-puzzle) để ưu tiên các nhánh OR có khả năng dẫn đến mục tiêu nhanh hơn.
+- **Điều kiện dừng**: Đạt trạng thái mục tiêu hoặc xác định không có giải pháp.
+
+---
+
+### 2. **Giải pháp tổng quát của AND-OR Search Trees**
+- **Mô tả**:
+  - AND-OR Search Trees xây dựng một cây tìm kiếm xen kẽ giữa **OR nodes** (lựa chọn hành động của tác nhân) và **AND nodes** (các kết quả không xác định của môi trường).
+  - Mục tiêu là tìm một **subtree** (cây con) mà:
+    - Bắt đầu từ trạng thái ban đầu.
+    - Đảm bảo đạt được trạng thái mục tiêu bất kể kết quả không xác định nào xảy ra.
+  - Kế hoạch kết quả là một **cây có điều kiện**, trong đó mỗi nhánh AND đại diện cho một kịch bản có thể xảy ra, và mỗi nhánh OR đại diện cho một quyết định của tác nhân.
+- **Cách hoạt động**:
+  1. **Khởi tạo**: Bắt đầu từ trạng thái ban đầu, tạo một OR node đại diện cho tác nhân.
+  2. **Mở rộng OR node**:
+     - Liệt kê tất cả các hành động khả thi từ trạng thái hiện tại.
+     - Với mỗi hành động, tạo một AND node đại diện cho các kết quả không xác định của hành động đó.
+  3. **Mở rộng AND node**:
+     - Với mỗi kết quả không xác định, tạo một OR node mới cho trạng thái tương ứng.
+     - Tiếp tục xen kẽ OR và AND nodes.
+  4. **Đánh giá**:
+     - Một OR node thành công nếu ít nhất một nhánh con của nó (qua một hành động) dẫn đến giải pháp.
+     - Một AND node thành công nếu tất cả các nhánh con của nó (tất cả kết quả không xác định) dẫn đến giải pháp.
+  5. **Điều kiện dừng**:
+     - Nếu đạt trạng thái mục tiêu, trả về kế hoạch.
+     - Nếu một OR node không có nhánh nào thành công hoặc một AND node có nhánh thất bại, quay lui (backtrack).
+     - Nếu không tìm được giải pháp, kết luận không có kế hoạch khả thi.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn và có giải pháp, AND-OR Search sẽ tìm được kế hoạch.
+  - **Tối ưu**: Có thể tối ưu nếu sử dụng heuristic để ưu tiên các hành động tại OR nodes (ví dụ: chọn hành động giảm khoảng cách Manhattan).
+  - **Độ phức tạp**:
+    - **Thời gian**: O(b^m), với b là số nhánh trung bình (số hành động hoặc kết quả không xác định) và m là độ sâu tối đa của cây. Trong môi trường phức tạp, chi phí có thể rất cao.
+    - **Không gian**: O(bm) nếu sử dụng tìm kiếm đệ quy, nhưng có thể giảm bằng cách lưu trữ trạng thái đã thăm.
+- **Ứng dụng**:
+  - Bài toán trong môi trường không xác định, như lập kế hoạch trong robotics, trò chơi với đối thủ (adversarial games), hoặc bài toán như 8-puzzle với nhiễu (ví dụ: ô trống di chuyển ngẫu nhiên).
+  - Xử lý các tình huống cần kế hoạch có điều kiện, đảm bảo thành công bất kể kết quả nào xảy ra.
+
+### 3. **So sánh tổng quát**
+| Thuật toán           | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
+|----------------------|------------|--------|-----------------------|------------------------|----------------|
+| **AND-OR Search Trees** | Có (nếu hữu hạn) | Có (nếu dùng heuristic) | O(b^m)               | O(bm)                 | Lập kế hoạch trong môi trường không xác định (robotics, trò chơi, 8-puzzle với nhiễu) |
+
+### 4. **Cấu trúc của AND-OR Search Tree**
+- **OR nodes**:
+  - Đại diện cho trạng thái mà tác nhân phải chọn hành động.
+  - Thành công nếu ít nhất một hành động dẫn đến giải pháp.
+  - Ví dụ: Trong 8-puzzle, tác nhân chọn di chuyển ô trống lên, xuống, trái, hoặc phải.
+- **AND nodes**:
+  - Đại diện cho các kết quả không xác định của một hành động.
+  - Thành công nếu tất cả các kết quả đều dẫn đến giải pháp.
+  - Ví dụ: Nếu môi trường có nhiễu, di chuyển "lên" có thể dẫn đến nhiều trạng thái khác nhau.
+- **Kế hoạch kết quả**:
+  - Một cây với các nhánh OR (lựa chọn hành động) và AND (xử lý tất cả kết quả).
+  - Ví dụ trong 8-puzzle: "Nếu trạng thái là S1, di chuyển lên; nếu kết quả là S2, di chuyển phải; nếu kết quả là S3, di chuyển xuống."
+
+- **Ưu điểm**:
+  - Xử lý tốt các môi trường không xác định, đảm bảo kế hoạch khả thi cho mọi kịch bản.
+  - Linh hoạt, có thể kết hợp với heuristic để cải thiện hiệu suất.
+  - Hoàn chỉnh trong không gian trạng thái hữu hạn.
+- **Nhược điểm**:
+  - Độ phức tạp cao trong môi trường có nhiều kết quả không xác định.
+  - Yêu cầu bộ nhớ lớn nếu không gian trạng thái phức tạp, trừ khi sử dụng kỹ thuật tối ưu như lưu trữ trạng thái đã thăm.
+  - Cần xác định rõ các kết quả không xác định của mỗi hành động, có thể khó trong một số bài toán thực tế.
+
+### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
+
+| **Thuật Toán**             | **Minh Họa GIF**                                         |
+|----------------------------|----------------------------------------------------------|
+| **AND-OR Search Trees**    | <img src="images/and_or_search.gif" width="500" alt="AND-OR Search Trees"> |
+
+### 🔍 So sánh các thuật toán tìm kiếm với hành động không xác định (Search with Nondeterministic Actions)
+
+| **Thuật toán**         | **Hoàn chỉnh** | **Tối ưu** | **Độ phức tạp thời gian** | **Độ phức tạp không gian** | **Hiệu suất trong 8-puzzle** | **Ưu điểm** | **Nhược điểm** |
+|-----------------------|----------------|------------|---------------------------|----------------------------|------------------------------|-------------|----------------|
+| **AND-OR Search Tree** | Có (nếu hữu hạn) | Có (nếu dùng heuristic) | O(b^m)                   | O(bm)                     | Hiệu quả khi xử lý môi trường không xác định, nhưng chậm và tốn tài nguyên nếu số kết quả không xác định lớn. | Xử lý không xác định, hoàn chỉnh, có thể tối ưu. | Độ phức tạp cao, tốn bộ nhớ, phụ thuộc vào mô hình không xác định. |
+
+**Ghi chú**:
+- **b**: Số nhánh trung bình, phụ thuộc vào số hành động và số kết quả không xác định mỗi hành động (trong 8-puzzle, b có thể từ 2-4 cho hành động và tăng thêm do nhiễu).
+- **m**: Độ sâu tối đa của cây tìm kiếm.
+- **Heuristic**: Khoảng cách Manhattan được sử dụng trong mã, là admissible và giúp ưu tiên các nhánh OR hiệu quả.
+- **Môi trường không xác định**: Trong `solve.py`, giả định rằng mỗi hành động có thể dẫn đến một tập hợp trạng thái (AND nodes), ví dụ: do nhiễu hoặc đối thủ.
 
 
+### 3. **Nhận xét chung**
+  - AND-OR Search Tree là lựa chọn phù hợp khi bài toán 8-puzzle được mở rộng để bao gồm yếu tố không xác định, như nhiễu môi trường hoặc hành động của đối thủ làm thay đổi trạng thái.
+  - Trong mã, việc sử dụng khoảng cách Manhattan làm heuristic giúp thuật toán ưu tiên các hành động đưa trạng thái gần mục tiêu, cải thiện hiệu suất so với tìm kiếm không định hướng.
+  - Tuy nhiên, thuật toán này không hiệu quả bằng các thuật toán xác định như A* hoặc IDA* trong 8-puzzle thông thường, vì nó phải xử lý nhiều kết quả không xác định, làm tăng chi phí tính toán.
 
 
 ## 👨‍💻 Tác giả
