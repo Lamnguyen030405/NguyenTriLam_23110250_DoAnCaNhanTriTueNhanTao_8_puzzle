@@ -970,36 +970,35 @@ class Solve:
         return None
 
     def solve_with_backtracking(self, max_depth=50):
-        """Solve the sliding puzzle using recursive backtracking from an all-zero state."""
+        """Giải bài toán sliding puzzle sử dụng thuật toán backtracking đệ quy từ trạng thái toàn số 0."""
         if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
             return None
 
-        # Validate start_state is all zeros
+        # Kiểm tra start_state phải là toàn số 0
         if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-            print("Warning: Expected start_state to be all zeros")
             return None
 
-        # Initialize metrics
-        self.visited_count = 0
-        self.max_memory = 0
+        # Khởi tạo các thông số đo lường
+        self.visited_count = 0  # Số trạng thái đã duyệt
+        self.max_memory = 0     # Bộ nhớ tối đa sử dụng
 
-        # Initialize state and storage for all states
-        state = [0] * 9  # Start with all zeros
-        all_states = []
+        # Khởi tạo trạng thái ban đầu và danh sách lưu các trạng thái
+        state = [0] * 9  # Bắt đầu với toàn số 0
+        all_states = []   # Lưu tất cả các trạng thái
 
         def is_consistent(state, position, value):
-            """Check if assigning 'value' at 'position' is consistent (unique in state)."""
+            """Kiểm tra việc gán 'value' tại vị trí 'position' có hợp lệ (không trùng lặp)."""
             count = state.count(value)
             if position < len(state) and state[position] == value:
                 count -= 1
             return count == 0
 
         def is_complete(state):
-            """Check if state is complete and matches goal_state."""
+            """Kiểm tra trạng thái đã hoàn thành và khớp với goal_state."""
             return state == self.goal_state and self.is_valid_state(state)
 
         def recursive_backtracking(state, depth, position=0):
-            """Recursive backtracking to assign values to cells."""
+            """Thuật toán backtracking đệ quy để gán giá trị vào các ô."""
             if depth >= max_depth:
                 return False
 
@@ -1012,7 +1011,8 @@ class Solve:
             if position >= 9:
                 return False
 
-            values = list(range(9))  # Values from 0 to 8
+            # Thử các giá trị từ 0 đến 8 theo thứ tự ngẫu nhiên
+            values = list(range(9))  
             random.shuffle(values)
             for value in values:
                 if is_consistent(state, position, value):
@@ -1025,13 +1025,14 @@ class Solve:
                     if recursive_backtracking(state[:], depth + 1, position + 1):
                         return True
 
+                    # Quay lui (backtrack)
                     state[position] = old_value
                     all_states.append(state[:])
                     self.visited_count += 1
 
             return False
 
-        # Start backtracking with consistent randomization
+        # Bắt đầu thuật toán với seed cố định để dễ kiểm tra
         random.seed(0)
         success = recursive_backtracking(state, 0)
 
@@ -1044,140 +1045,124 @@ class Solve:
 
     def calculate_constraints(self):
         """Calculate the order of positions to assign values, prioritizing center."""
-        # Order positions to assign values, starting with center (1,1), then others, excluding (2,2)
-        order = [(1, 1)]  # Start with center
-        for row in range(3):
-            for col in range(3):
-                if (row, col) != (1, 1) and (row, col) != (2, 2):
-                    order.append((row, col))
+        # Order positions to assign values, starting with center (index 4, equivalent to (1,1))
+        order = [4]  # Center position
+        for i in range(9):
+            if i != 4 and i != 8:  # Exclude center (4) and last position (8, equivalent to (2,2))
+                order.append(i)
         return order
 
-    def check_constraints(self, state, row, col, value):
-        """Check if assigning 'value' at (row, col) is consistent (unique in state)."""
+    def check_constraints(self, state, pos, value):
+        """Check if assigning 'value' at position 'pos' is consistent (unique in state)."""
         # Check if value is already present in the state
-        for i in range(3):
-            for j in range(3):
-                if state[i][j] is not None and state[i][j] == value:
-                    return False
-        return True
+        return state.count(value) == 0
 
     def solve_with_generate_and_test(self, max_depth=50):
-        """Solve the sliding puzzle using generate-and-test with backtracking from an all-zero state."""
+        """Giải bài toán trượt gạch bằng phương pháp generate-and-test kết hợp với quay lui từ trạng thái toàn số 0."""
         if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
             return None
 
-        # Validate start_state is all zeros
+        # Kiểm tra start_state có phải toàn số 0 (trạng thái khởi đầu mặc định)
         if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-            print("Warning: Expected start_state to be all zeros for generate-and-test")
             return None
 
-        # Initialize metrics
+        # Khởi tạo các chỉ số theo dõi
         self.reset_metrics()
 
-        # Initialize state as 2D list
-        state = [[None for _ in range(3)] for _ in range(3)]
+        # Khởi tạo trạng thái ban đầu dạng danh sách 1 chiều
+        state = [0] * 9  # Tất cả ô bắt đầu là 0
         all_states = []
-        state_count = [0]
+        state_count = [0]  # Sử dụng danh sách để truyền tham chiếu
 
-        # Calculate order of positions and other positions
+        # Tính toán thứ tự điền và các vị trí khác ngoài trung tâm và cuối
         order = self.calculate_constraints()
-        other_positions = [pos for pos in order if pos != (1, 1) and pos != (2, 2)]
-        center_values = random.sample(range(1, 9), 8)  # Values for center (1,1)
+        other_positions = [pos for pos in order if pos != 4 and pos != 8]
+
+        # Sinh ngẫu nhiên các giá trị (1–8) để thử cho vị trí trung tâm (ô 4)
+        center_values = random.sample(range(1, 9), 8)
 
         def is_complete(state):
-            """Check if state is complete and matches goal_state."""
-            # Convert 2D state to 1D
-            flat_state = []
-            for i in range(3):
-                for j in range(3):
-                    flat_state.append(0 if state[i][j] is None else state[i][j])
-            return flat_state == self.goal_state and self.is_valid_state(flat_state)
+            """Kiểm tra xem trạng thái đã đầy đủ và khớp với goal_state hay chưa."""
+            return state == self.goal_state and self.is_valid_state(state)
 
         def backtrack(index, depth=0):
-            """Backtrack to assign values to cells."""
+            """Hàm quay lui để gán giá trị cho các vị trí."""
             if depth >= max_depth:
                 return False
 
-            # Convert current 2D state to 1D for storage
-            flat_state = []
-            for i in range(3):
-                for j in range(3):
-                    flat_state.append(0 if state[i][j] is None else state[i][j])
-            all_states.append(flat_state)
+            # Lưu lại trạng thái hiện tại
+            all_states.append(state[:])
             state_count[0] += 1
             self.visited_count += 1
             self.max_memory = max(self.max_memory, state_count[0])
 
+            # Nếu đã gán xong tất cả các ô cần thiết
             if index == len(other_positions) + 1:
-                state[2][2] = 0  # Assign 0 to (2,2) as empty tile
-                flat_state = []
-                for i in range(3):
-                    for j in range(3):
-                        flat_state.append(0 if state[i][j] is None else state[i][j])
-                all_states.append(flat_state)
+                state[8] = 0  # Gán 0 cho ô cuối cùng (vị trí 8, tức ô (2,2))
+                all_states.append(state[:])
                 state_count[0] += 1
                 self.visited_count += 1
                 if is_complete(state):
                     return True
-                state[2][2] = None
+                state[8] = 0
                 return False
 
             if index == 0:
-                row, col = (1, 1)  # Start with center
+                pos = 4  # Bắt đầu với ô trung tâm
                 values = center_values
             else:
-                row, col = other_positions[index - 1]
-                # Available values are those not yet used
-                used_values = [state[i][j] for i in range(3) for j in range(3) if state[i][j] is not None]
+                pos = other_positions[index - 1]
+                # Tính toán các giá trị chưa được sử dụng
+                used_values = [v for v in state if v != 0]
                 values = [v for v in range(1, 9) if v not in used_values]
 
             for value in values:
-                if self.check_constraints(state, row, col, value):
-                    state[row][col] = value
+                if self.check_constraints(state, pos, value):
+                    old_value = state[pos]
+                    state[pos] = value
                     if backtrack(index + 1, depth + 1):
                         return True
-                    state[row][col] = None
+                    state[pos] = old_value  # Quay lui
 
             return False
 
-        # Start backtracking with consistent randomization
+        # Thiết lập seed để đảm bảo sinh số ngẫu nhiên ổn định
         random.seed(0)
         success = backtrack(0)
 
         return all_states if success and all_states else None
 
     def solve_with_ac3(self, max_depth=50):
-        """Solve the sliding puzzle using AC-3 for arc consistency followed by backtracking."""
+        """Giải bài toán trượt gạch bằng AC-3 để ràng buộc cung, sau đó là quay lui."""
         if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
             return None
 
-        # Validate start_state is all zeros for backtracking
+        # Kiểm tra start_state có phải toàn số 0 (trạng thái khởi đầu cho thuật toán quay lui)
         if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
-            print("Warning: Expected start_state to be all zeros for AC-3 and backtracking")
             return None
 
-        # Initialize metrics
+        # Khởi tạo các chỉ số theo dõi
         self.visited_count = 0
         self.max_memory = 0
 
-        # Initialize state as 2D array
+        # Khởi tạo trạng thái dưới dạng mảng 2D
         state = np.zeros((3, 3), dtype=int)
-        DOMAIN = list(range(9))  # Values from 0 to 8 (0 represents empty tile)
+        DOMAIN = list(range(9))  # Giá trị từ 0 đến 8 (0 là ô trống)
         all_states = []
 
         def is_consistent(state, row, col, value):
-            """Check if assigning 'value' at (row, col) is consistent (unique in state)."""
+            """Kiểm tra xem việc gán 'value' vào (row, col) có hợp lệ (không trùng giá trị trong state)."""
             flat_state = state.flatten()
             count = list(flat_state).count(value)
             return count == 0
 
         def is_complete(state):
-            """Check if state is complete and matches goal_state."""
+            """Kiểm tra xem trạng thái đã hoàn thành và khớp với goal_state chưa."""
             flat_state = state.flatten().tolist()
             return flat_state == self.goal_state and self.is_valid_state(flat_state)
 
         def find_unassigned(state):
-            """Find the next unassigned cell (row, col)."""
+            """Tìm ô chưa được gán giá trị tiếp theo (row, col)."""
             for row in range(3):
                 for col in range(3):
                     if state[row, col] == 0:
@@ -1185,13 +1170,12 @@ class Solve:
             return None, None
 
         def revise(domains, xi, xj):
-            """Revise domains[xi] based on domains[xj] to enforce arc consistency."""
+            """Sửa lại miền giá trị của xi dựa trên miền giá trị của xj để đảm bảo tính nhất quán."""
             revised = False
             xi_row, xi_col = divmod(xi, 3)
             xj_row, xj_col = divmod(xj, 3)
             for x in domains[xi][:]:
-                # Check if there exists a value y in domains[xj] that satisfies the constraint
-                # Constraint: xi and xj must have different values
+                # Ràng buộc: xi và xj không được trùng giá trị
                 conflict = all(x == y for y in domains[xj])
                 if conflict:
                     domains[xi].remove(x)
@@ -1199,20 +1183,20 @@ class Solve:
             return revised
 
         def ac3_algorithm(domains, variables, neighbors):
-            """Run AC-3 to enforce arc consistency."""
+            """Thực hiện AC-3 để đảm bảo tính nhất quán cung."""
             queue = deque((xi, xj) for xi in variables for xj in neighbors[xi])
             while queue:
                 xi, xj = queue.popleft()
                 if revise(domains, xi, xj):
                     if not domains[xi]:
-                        return False
+                        return False  # Không còn miền giá trị hợp lệ
                     for xk in neighbors[xi]:
                         if xk != xj:
                             queue.append((xk, xi))
             return True
 
         def backtracking_with_ac3(state, domains, all_states, depth=0):
-            """Backtracking with AC-3 preprocessed domains."""
+            """Thuật toán quay lui có sử dụng miền giá trị đã được xử lý bởi AC-3."""
             if depth >= max_depth:
                 return False
 
@@ -1226,7 +1210,7 @@ class Solve:
             if row is None:
                 return False
 
-            # Convert (row, col) to variable index
+            # Chuyển (row, col) thành chỉ số biến trong danh sách 1 chiều
             xi = row * 3 + col
             values = domains[xi].copy()
             np.random.shuffle(values)
@@ -1239,35 +1223,36 @@ class Solve:
                     self.visited_count += 1
                     self.max_memory = max(self.max_memory, len(all_states))
 
-                    # Create a copy of domains to restore after recursion
+                    # Sao lưu miền giá trị để khôi phục nếu không thành công
                     domains_copy = {k: v.copy() for k, v in domains.items()}
                     if backtracking_with_ac3(state.copy(), domains_copy, all_states, depth + 1):
                         return True
 
+                    # Quay lui
                     state[row, col] = old_value
                     all_states.append(state.flatten().tolist())
                     self.visited_count += 1
 
             return False
 
-        # Initialize variables and neighbors for AC-3
-        variables = list(range(9))  # Variables are cell indices 0 to 8
+        # Khởi tạo biến và các biến liên quan cho AC-3
+        variables = list(range(9))  # Các biến là chỉ số ô từ 0 đến 8
         neighbors = {i: [] for i in range(9)}
         for i in range(9):
             for j in range(9):
                 if i != j:
-                    neighbors[i].append(j)  # All pairs of distinct cells have a uniqueness constraint
+                    neighbors[i].append(j)  # Ràng buộc tất cả các cặp ô khác nhau phải có giá trị khác nhau
 
-        # Initialize domains
+        # Khởi tạo miền giá trị cho từng ô
         domains = {i: DOMAIN.copy() for i in range(9)}
 
-        # Run AC-3 to enforce arc consistency
+        # Thực hiện AC-3 để giảm miền giá trị trước khi quay lui
         np.random.seed(0)
         ac3_result = ac3_algorithm(domains, variables, neighbors)
         if not ac3_result:
-            return None  # No solution possible
+            return None  # Không có lời giải
 
-        # Run backtracking with AC-3 preprocessed domains
+        # Thực hiện quay lui với miền giá trị đã xử lý AC-3
         success = backtracking_with_ac3(state, domains, all_states)
 
         return all_states if success and all_states else None

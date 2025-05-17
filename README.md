@@ -125,7 +125,6 @@ Các thuật toán tìm kiếm không thông tin (Uninformed Search) đều khô
 * **DFS** có ưu điểm tiết kiệm bộ nhớ, nhưng **dễ rơi vào vòng lặp vô tận** và không đảm bảo tối ưu.
 * **UCS** mở rộng BFS bằng cách tính đến chi phí, cho phép tìm lời giải tối ưu khi chi phí không đồng đều, nhưng **hiệu năng giảm nếu không gian tìm kiếm lớn**.
 * **IDS** kết hợp ưu điểm của BFS và DFS: đảm bảo tối ưu, tiết kiệm bộ nhớ, nhưng **thời gian chạy lâu hơn do phải lặp lại nhiều lần**.
-
 Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và cần lời giải tối ưu, **BFS, UCS hoặc IDS** là lựa chọn phù hợp. Tuy nhiên, khi bộ nhớ hạn chế, **IDS** thường là phương án an toàn hơn.
 ---
 ## Informed Search Algorithms
@@ -752,15 +751,16 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Không gian trạng thái**: Tập hợp tất cả các gán giá trị có thể cho các biến, giới hạn bởi miền giá trị và ràng buộc.
 
 ---
+
 ### 3. **Giải pháp tổng quát của CSPs**
 
 #### **a. AC-3 (Arc Consistency Algorithm)**
 - **Mô tả**:
-  - AC-3 là một thuật toán tiền xử lý (preprocessing) dùng để giảm miền giá trị của các biến bằng cách đảm bảo **tính nhất quán cung** (arc consistency).
+  - AC-3 là một thuật toán tiền xử lý dùng để giảm miền giá trị của các biến bằng cách đảm bảo **tính nhất quán cung** (arc consistency).
   - Một cung (arc) giữa hai biến \(X_i\) và \(X_j\) là nhất quán nếu với mỗi giá trị trong miền của \(X_i\), tồn tại ít nhất một giá trị trong miền của \(X_j\) thỏa mãn ràng buộc giữa chúng.
   - AC-3 loại bỏ các giá trị không thỏa mãn ràng buộc, thu hẹp miền giá trị để giảm không gian tìm kiếm trước khi áp dụng thuật toán tìm kiếm chính (như Backtracking).
 - **Cách hoạt động**:
-  1. **Khởi tạo**: Tạo một hàng đợi chứa tất cả các cung (arcs) tương ứng với các ràng buộc đôi trong CSP.
+  1. **Khởi tạo**: Tạo một hàng đợi chứa tất cả các cung tương ứng với các ràng buộc đôi trong CSP.
   2. **Xử lý cung**:
      - Lấy một cung \((X_i, X_j)\) từ hàng đợi.
      - Kiểm tra tính nhất quán của cung: Với mỗi giá trị trong miền của \(X_i\), đảm bảo tồn tại giá trị trong miền của \(X_j\) thỏa mãn ràng buộc.
@@ -776,7 +776,7 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
     - **Thời gian**: O(e * d^3) trong trường hợp xấu nhất, với e là số cung và d là kích thước miền lớn nhất.
     - **Không gian**: O(e), để lưu hàng đợi các cung.
 - **Ứng dụng**:
-  - Tiền xử lý cho các bài toán CSP như 8-puzzle, tô màu bản đồ, hoặc lập lịch, giúp giảm miền giá trị trước khi tìm kiếm.
+  - Tiền xử lý cho các bài toán CSP như 8-puzzle, tô màu bản đồ, hoặc lập lịch.
   - Trong 8-puzzle, AC-3 có thể đảm bảo rằng các ô lân cận có giá trị phù hợp với các ràng buộc về hoán vị.
 
 #### **b. Backtracking Search**
@@ -785,68 +785,125 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
   - Thường được cải tiến với các kỹ thuật như chọn biến thông minh (most constrained variable), chọn giá trị tối ưu (least constraining value), và kiểm tra ràng buộc sớm (forward checking).
 - **Cách hoạt động**:
   1. **Khởi tạo**: Bắt đầu với một gán rỗng (không biến nào được gán giá trị).
-  2. **Chọn biến**: Chọn một biến chưa được gán (có thể dùng tiêu chí như biến có miền nhỏ nhất để giảm số nhánh).
+  2. **Chọn biến**: Chọn một biến chưa được gán (có thể dùng tiêu chí như biến có miền nhỏ nhất).
   3. **Gán giá trị**: Thử từng giá trị trong miền của biến, kiểm tra xem gán này có thỏa mãn tất cả ràng buộc liên quan không.
   4. **Đệ quy**:
      - Nếu gán hợp lệ, chuyển sang biến tiếp theo và lặp lại.
-     - Nếu gán không hợp lệ hoặc không dẫn đến giải pháp, quay lui để thử giá trị khác cho biến hiện tại.
+     - Nếu gán không hợp lệ hoặc không dẫn đến giải pháp, quay lui để thử giá trị khác.
   5. **Kết thúc**:
      - Trả về gán đầy đủ thỏa mãn tất cả ràng buộc hoặc kết luận không có giải pháp.
 - **Đặc điểm**:
   - **Hoàn chỉnh**: Có, nếu không gian trạng thái hữu hạn, Backtracking sẽ tìm được giải pháp hoặc xác định không có giải pháp.
-  - **Tối ưu**: Có thể tối ưu nếu sử dụng tiêu chí chọn giá trị dựa trên chi phí (nhưng thường không áp dụng trong CSP cơ bản).
+  - **Tối ưu**: Có thể tối ưu nếu sử dụng tiêu chí chọn giá trị dựa trên chi phí.
   - **Độ phức tạp**:
     - **Thời gian**: O(d^n) trong trường hợp xấu nhất, với n là số biến và d là kích thước miền lớn nhất.
-    - **Không gian**: O(n), để lưu trạng thái gán hiện tại trong tìm kiếm đệ quy.
+    - **Không gian**: O(n), để lưu trạng thái gán hiện tại.
 - **Ứng dụng**:
   - Giải các bài toán CSP như 8-puzzle, Sudoku, hoặc lập lịch.
-  - Trong 8-puzzle, Backtracking có thể gán giá trị cho các ô (hoặc chuỗi di chuyển) để đạt trạng thái mục tiêu, nhưng thường cần kết hợp với AC-3 để giảm không gian tìm kiếm.
+  - Trong 8-puzzle, Backtracking có thể gán giá trị cho các ô hoặc chuỗi di chuyển để đạt trạng thái mục tiêu.
+
+#### **c. Generate and Test**
+- **Mô tả**:
+  - Generate and Test là một phương pháp đơn giản để giải bài toán CSP bằng cách tạo ra tất cả các gán giá trị có thể cho các biến (các tổ hợp giá trị trong miền) và kiểm tra từng gán để tìm giải pháp thỏa mãn tất cả ràng buộc.
+  - Đây là một cách tiếp cận "thô" (brute-force), không hiệu quả cho các bài toán có không gian tìm kiếm lớn, nhưng dễ triển khai và đảm bảo tìm được giải pháp nếu tồn tại.
+- **Cách hoạt động**:
+  1. **Khởi tạo**:
+     - Xác định danh sách các biến và miền giá trị của chúng.
+     - Tạo một tập hợp tất cả các tổ hợp gán giá trị có thể (sản phẩm Descartes của các miền).
+  2. **Tạo gán**:
+     - Lần lượt tạo từng tổ hợp gán giá trị cho tất cả các biến.
+     - Ví dụ: Nếu có \(n\) biến, mỗi biến có miền kích thước \(d\), tạo ra \(d^n\) gán.
+  3. **Kiểm tra ràng buộc**:
+     - Với mỗi gán, kiểm tra xem nó có thỏa mãn tất cả các ràng buộc của CSP không.
+     - Nếu thỏa mãn, lưu gán này là một giải pháp.
+  4. **Kết thúc**:
+     - Trả về giải pháp đầu tiên tìm thấy, tất cả các giải pháp, hoặc kết luận không có giải pháp nếu không gán nào thỏa mãn.
+- **Đặc điểm**:
+  - **Hoàn chỉnh**: Có, Generate and Test sẽ kiểm tra toàn bộ không gian tìm kiếm, đảm bảo tìm được giải pháp nếu tồn tại.
+  - **Tối ưu**: Không, vì nó không ưu tiên các gán có khả năng thỏa mãn cao hơn, chỉ kiểm tra lần lượt.
+  - **Độ phức tạp**:
+    - **Thời gian**: O(d^n * c), với \(n\) là số biến, \(d\) là kích thước miền lớn nhất, và \(c\) là chi phí kiểm tra ràng buộc cho mỗi gán.
+    - **Không gian**: O(n), để lưu gán hiện tại, hoặc O(d^n) nếu lưu tất cả các gán.
+  - **Hiệu quả**: Rất thấp, đặc biệt khi không gian tìm kiếm lớn, vì nó không sử dụng bất kỳ kỹ thuật tối ưu nào.
+- **Ứng dụng**:
+  - Phù hợp cho các bài toán CSP nhỏ, nơi không gian tìm kiếm không quá lớn (ví dụ: CSP với ít biến hoặc miền nhỏ).
+  - Trong 8-puzzle, Generate and Test có thể tạo tất cả các hoán vị của lưới 3x3 (9! = 362,880 trạng thái) và kiểm tra xem có trạng thái nào khớp với `goal_state` không, nhưng không thực tế do độ phức tạp cao.
+  - Thường được cải tiến bằng cách kết hợp với các kỹ thuật như AC-3 hoặc Backtracking để giảm số gán cần kiểm tra.
 
 ---
+
 ### 4. **Giải pháp tổng quát của CSPs**
 - **Quy trình chung**:
   1. **Biểu diễn bài toán**:
      - Xác định các biến, miền giá trị, và ràng buộc.
-     - Ví dụ trong 8-puzzle: 9 biến (mỗi ô), miền giá trị {0, 1, ..., 8}, ràng buộc là các ô phải tạo thành hoán vị hợp lệ và thỏa mãn cấu trúc lưới.
+     - Ví dụ trong 8-puzzle: 9 biến (mỗi ô), miền giá trị {0, 1, ..., 8}, ràng buộc là các ô phải tạo thành hoán vị hợp lệ, thỏa mãn cấu trúc lưới và khả năng di chuyển ô trống.
   2. **Tiền xử lý với AC-3**:
      - Áp dụng AC-3 để thu hẹp miền giá trị, loại bỏ các giá trị không thỏa mãn ràng buộc đôi.
-     - Giảm kích thước không gian tìm kiếm trước khi chạy Backtracking.
-  3. **Tìm kiếm với Backtracking**:
-     - Gán giá trị cho các biến một cách tuần tự, kiểm tra ràng buộc, và quay lui khi cần.
-     - Sử dụng các kỹ thuật tối ưu như:
-       - **Most Constrained Variable**: Chọn biến có miền nhỏ nhất để gán trước.
-       - **Least Constraining Value**: Chọn giá trị ít hạn chế các biến khác.
-       - **Forward Checking**: Kiểm tra ràng buộc ngay sau mỗi gán để phát hiện sớm các nhánh không khả thi.
+     - Giảm kích thước không gian tìm kiếm trước khi chạy các thuật toán tìm kiếm như Backtracking hoặc Generate and Test.
+  3. **Tìm kiếm giải pháp**:
+     - **Generate and Test**:
+       - Tạo tất cả các tổ hợp gán giá trị cho các biến và kiểm tra từng gán.
+       - Thích hợp cho các bài toán nhỏ, nhưng không hiệu quả cho 8-puzzle do không gian tìm kiếm lớn.
+     - **Backtracking Search**:
+       - Gán giá trị cho các biến một cách tuần tự, kiểm tra ràng buộc, và quay lui khi cần.
+       - Sử dụng các kỹ thuật tối ưu:
+         - **Most Constrained Variable**: Chọn biến có miền nhỏ nhất.
+         - **Least Constraining Value**: Chọn giá trị ít hạn chế các biến khác.
+         - **Forward Checking**: Kiểm tra ràng buộc ngay sau mỗi gán.
+       - Hiệu quả hơn Generate and Test khi kết hợp với AC-3.
   4. **Kết quả**:
      - Trả về gán đầy đủ thỏa mãn tất cả ràng buộc hoặc kết luận không có giải pháp.
 - **Ưu điểm**:
-  - Cấu trúc rõ ràng, dễ biểu diễn các bài toán có ràng buộc.
-  - AC-3 giảm đáng kể không gian tìm kiếm, cải thiện hiệu suất Backtracking.
-  - Backtracking linh hoạt, có thể kết hợp với nhiều kỹ thuật tối ưu.
+  - **Generate and Test**: Đơn giản, dễ triển khai, đảm bảo tìm giải pháp nếu tồn tại.
+  - **AC-3**: Giảm đáng kể không gian tìm kiếm, cải thiện hiệu suất cho Backtracking và Generate and Test.
+  - **Backtracking**: Linh hoạt, có thể kết hợp với nhiều kỹ thuật tối ưu, hiệu quả hơn Generate and Test.
 - **Nhược điểm**:
-  - AC-3 không đảm bảo tìm giải pháp, chỉ là tiền xử lý.
-  - Backtracking có thể chậm trong trường hợp xấu nhất (O(d^n)), đặc biệt khi không gian tìm kiếm lớn.
-  - Trong các bài toán như 8-puzzle, biểu diễn CSP có thể phức tạp hơn so với tìm kiếm trạng thái (state-space search).
+  - **Generate and Test**: Không hiệu quả cho các bài toán lớn (như 8-puzzle) do kiểm tra toàn bộ không gian tìm kiếm (O(d^n)).
+  - **AC-3**: Chỉ là tiền xử lý, không đảm bảo tìm giải pháp.
+  - **Backtracking**: Có thể chậm trong trường hợp xấu nhất (O(d^n)), đặc biệt nếu không sử dụng kỹ thuật tối ưu.
+  - Trong 8-puzzle, biểu diễn CSP (gán giá trị cho ô) phức tạp hơn so với tìm kiếm trạng thái (state-space search) bằng A* hoặc IDA*.
 
 ---
 
-### 5. **So sánh tổng quát**
-| Thuật toán         | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
-|--------------------|------------|--------|-----------------------|------------------------|----------------|
-| **AC-3**           | Không      | Không  | O(e * d^3)           | O(e)                  | Tiền xử lý CSP, giảm miền giá trị (8-puzzle, Sudoku, lập lịch) |
-| **Backtracking**   | Có         | Không (trừ khi tối ưu hóa) | O(d^n)           | O(n)                  | Giải CSP, tìm gán đầy đủ (8-puzzle, tô màu bản đồ) |
+### Ứng dụng cụ thể trong 8-puzzle
+- **Generate and Test**:
+  - Tạo tất cả các hoán vị của lưới 3x3 (9! = 362,880 trạng thái, nhưng chỉ 9!/2 ≈ 181,440 trạng thái khả thi do tính chẵn lẻ của hoán vị).
+  - Kiểm tra từng hoán vị để tìm trạng thái khớp với `goal_state` và có thể đạt được từ `start_state` thông qua các di chuyển hợp lệ.
+  - Không thực tế do số lượng trạng thái lớn và không tận dụng cấu trúc của bài toán (như khả năng di chuyển ô trống).
+- **AC-3**:
+  - Thu hẹp miền giá trị của các ô dựa trên ràng buộc:
+    - Tính duy nhất: Mỗi ô có giá trị khác nhau.
+    - Di chuyển ô trống: Ô trống (0) chỉ có thể xuất hiện ở các ô lân cận.
+    - Khả năng đạt mục tiêu: Các giá trị phải dẫn đến `goal_state`.
+  - Ví dụ: Nếu ô 0 trong `start_state` cố định giá trị 5, AC-3 loại bỏ các giá trị khác khỏi miền của ô 0.
+- **Backtracking**:
+  - Gán giá trị cho các ô (hoặc chuỗi di chuyển) để đạt `goal_state`.
+  - Kết hợp với AC-3 để giảm số giá trị cần thử, nhưng vẫn kém hiệu quả hơn A* trong 8-puzzle do không tận dụng heuristic như khoảng cách Manhattan.
+
+---
+
+### So sánh các thuật toán trong CSPs
+
+| Thuật toán            | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian       | Độ phức tạp không gian | Ứng dụng chính                     |
+|-----------------------|------------|--------|-----------------------------|------------------------|------------------------------------|
+| **Generate and Test** | Có         | Không  | O(d^n * c)                  | O(n) hoặc O(d^n)       | Bài toán CSP nhỏ, kiểm tra toàn bộ |
+| **AC-3**              | Không      | Không  | O(e * d^3)                  | O(e)                   | Tiền xử lý, giảm miền giá trị      |
+| **Backtracking**      | Có         | Có thể | O(d^n)                      | O(n)                   | Giải CSP với không gian hữu hạn    |
 
 **Ghi chú**:
-- **e**: Số cung (ràng buộc đôi) trong CSP.
-- **d**: Kích thước miền lớn nhất.
-- **n**: Số biến trong CSP.
-- 
+- \(n\): Số biến.
+- \(d\): Kích thước miền lớn nhất.
+- \(e\): Số cung (ràng buộc đôi).
+- \(c\): Chi phí kiểm tra ràng buộc.
+
+--- 
 ### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
 
 | **Thuật Toán**             | **Minh Họa GIF**                                                |
 |----------------------------|-----------------------------------------------------------------|
-| **AC-3 and A\***           | <img src="images/ac3_astar.gif" width="500" alt="AC-3 and A*">  |
+| **AC-3 and backtracking**  | <img src="images/ac3_backtracking.gif" width="500" alt="AC-3 and backtracking">  |
 | **Backtracking**           | <img src="images/backtracking.gif" width="500" alt="Backtracking"> |
+| **Generate and Test**      |<img src="images/generate_and_test.gif" width="500" alt="Backtracking">|
 ---
 ## Reinforcement Learning
 ---
