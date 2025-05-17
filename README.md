@@ -705,6 +705,8 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 |-----------------------------------------------------|------------------------------------------------------------------------|
 | **Searching with No Observation**                  | <img src="images/no_observation_search.gif" width="500" alt="No Observation Search"> |
 | **Searching in Partially Observable Environments** | <img src="images/partial_observation_search.gif" width="500" alt="Partially Observable Search"> |
+|-----------------------------------------------------|------------------------------------------------------------------------|
+| **Bổ sung trường hợp khởi tạo ban đầu dễ**        |<img src="images/easy_initial_state.gif" width="500" alt="Easy Initial State">|
 
 ### 🔍 So sánh các thuật toán tìm kiếm với môi trường không quan sát (Searching with No Observation) và tìm kiếm với môi trường không quan sát một phần (Searching in Partially Observable Environments)
 

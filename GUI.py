@@ -9,22 +9,22 @@ import threading
 
 pygame.init()
 
-# Lấy kích thước màn hình thực tế
+# Get actual screen dimensions
 info = pygame.display.Info()
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 
-# Đặt kích thước mặc định nếu không lấy được thông tin màn hình
+# Set default dimensions if screen info is unavailable
 DEFAULT_WIDTH = 1200
 DEFAULT_HEIGHT = 800
 WIDTH = min(SCREEN_WIDTH, DEFAULT_WIDTH) if SCREEN_WIDTH > 0 else DEFAULT_WIDTH
 HEIGHT = min(SCREEN_HEIGHT, DEFAULT_HEIGHT) if SCREEN_HEIGHT > 0 else DEFAULT_HEIGHT
 
-# Tính toán các tỷ lệ dựa trên kích thước màn hình
+# Calculate layout ratios based on screen size
 TILE_SIZE = min(WIDTH // 5, HEIGHT // 5)
 SMALL_GRID_SIZE = TILE_SIZE // 2
 
-# Tính toán vị trí dựa trên tỷ lệ
+# Calculate positions based on ratios
 MAIN_GRID_X = WIDTH * 0.05
 MAIN_GRID_Y = HEIGHT * 0.2
 START_GRID_X = WIDTH * 0.5
@@ -32,10 +32,11 @@ START_GRID_Y = HEIGHT * 0.1
 GOAL_GRID_X = WIDTH * 0.75
 GOAL_GRID_Y = HEIGHT * 0.1
 
-# Khởi tạo màn hình
+# Initialize screen
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Sliding Puzzle - Nguyễn Trí Lâm")
 
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
@@ -49,7 +50,7 @@ DEFAULT_INITIAL_STATE = [2, 6, 5, 0, 8, 7, 4, 3, 1]
 INITIAL_STATE = copy.deepcopy(DEFAULT_INITIAL_STATE)
 GOAL_STATE = [1, 2, 3, 4, 5, 6, 7, 8, 0]
 
-# Hàm cập nhật các thành phần giao diện dựa trên kích thước màn hình
+# Function to update interface components based on screen size
 def update_layout():
     global WIDTH, HEIGHT, TILE_SIZE, SMALL_GRID_SIZE, MAIN_GRID_X, MAIN_GRID_Y, START_GRID_X, START_GRID_Y, GOAL_GRID_X, GOAL_GRID_Y
     global SOLVE_BUTTON_RECT, NEXT_STEP_BUTTON_RECT, BACK_BUTTON_RECT, RESET_BUTTON_RECT, SET_INITIAL_BUTTON_RECT
@@ -90,7 +91,7 @@ def update_layout():
         height=HEIGHT * 0.05
     )
 
-# Khởi tạo ComboBox
+# Initialize ComboBox
 combo_box = ComboBox(WIDTH * 0.05, HEIGHT * 0.05, WIDTH * 0.2, HEIGHT * 0.05, 
                      ["BFS", "DFS", "UCS", "IDS", "Greedy", "A*", "IDA*", "Hill Climbing", 
                       "SA Hill Climbing", "Stochastic Hill Climbing", "Beam Search", "Annealing", 
@@ -128,7 +129,7 @@ def draw_small_board(state, position, label):
                 screen.blit(text, text_rect)
 
 def draw_board(state, solution=None, current_step=0, show_popup=False, selected_algorithm=None, 
-               combo_box=None, is_customizing=False, is_solution_found=False):
+               combo_box=None, is_customizing=False, is_solution_found=False, is_playing=False):
     screen.fill(WHITE)
 
     for i in range(3):
@@ -220,6 +221,11 @@ def draw_board(state, solution=None, current_step=0, show_popup=False, selected_
     if solution and not is_solution_found:
         font = pygame.font.Font(None, int(HEIGHT * 0.045))
         text = font.render("NO SOLUTION FOUND! Showing best state reached.", True, RED)
+        screen.blit(text, (MAIN_GRID_X, MAIN_GRID_Y + 3 * TILE_SIZE + HEIGHT * 0.02))
+
+    if is_playing:
+        font = pygame.font.Font(None, int(HEIGHT * 0.045))
+        text = font.render("Playing solution... Click Reset to stop.", True, BLUE)
         screen.blit(text, (MAIN_GRID_X, MAIN_GRID_Y + 3 * TILE_SIZE + HEIGHT * 0.05))
 
     font = pygame.font.Font(None, int(HEIGHT * 0.035))
@@ -278,7 +284,7 @@ def move_tile(state, direction):
     new_state[empty_idx], new_state[new_idx] = new_state[new_idx], new_state[empty_idx]
     return new_state
 
-# Khởi tạo trạng thái ban đầu
+# Initialize state
 current_state = copy.deepcopy(INITIAL_STATE)
 clock = pygame.time.Clock()
 running = True
@@ -288,14 +294,18 @@ show_popup = False
 selected_algorithm = "BFS"
 is_customizing = False
 is_solution_found = False
+is_playing = False
+last_step_time = 0
+STEP_INTERVAL = 100  # Milliseconds between steps
 
 update_layout()
 
-# Biến để theo dõi trạng thái giao diện
+# Interface state variables
 in_sensorless_env = False
 sensorless_env = None
 
 while running:
+    current_time = pygame.time.get_ticks()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -305,13 +315,14 @@ while running:
             update_layout()
 
         if not in_sensorless_env:
-            # Xử lý giao diện chính
+            # Handle main interface
             combo_box.handle_event(event)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
 
                 if SOLVE_BUTTON_RECT.collidepoint(x, y) and not is_customizing:
+                    is_playing = False
                     selected_algorithm = combo_box.selected_option
                     solve = Solve(current_state, GOAL_STATE)
                     
@@ -357,7 +368,7 @@ while running:
                     elif selected_algorithm == "AC-3 and A*":
                         solution = solve.solve_with_ac3()
                     elif selected_algorithm == "Q - Learning":
-                       def run_q_learning():
+                        def run_q_learning():
                             global solution, is_solution_found
                             solution = solve.solve_with_q_learning(episodes=50000)
                             end_time = time.time()
@@ -375,8 +386,9 @@ while running:
                             global show_popup
                             show_popup = True
 
-                       print("Running Q-Learning... This may take a while.")
-                       threading.Thread(target=run_q_learning, daemon=True).start()
+                        print("Running Q-Learning... This may take a while.")
+                        threading.Thread(target=run_q_learning, daemon=True).start()
+                        continue
 
                     end_time = time.time()
                     execution_time = end_time - start_time
@@ -403,16 +415,19 @@ while running:
                             print("-------------------")
 
                 elif solution and NEXT_STEP_BUTTON_RECT.collidepoint(x, y) and not is_customizing:
+                    is_playing = False
                     if current_step < len(solution) - 1:
                         current_step += 1
                         current_state = solution[current_step]
 
                 elif solution and BACK_BUTTON_RECT.collidepoint(x, y) and current_step > 0 and not is_customizing:
+                    is_playing = False
                     current_step -= 1
                     current_state = solution[current_step]
                     print(f"Back to step {current_step}")
                     
                 elif RESET_BUTTON_RECT.collidepoint(x, y):
+                    is_playing = False
                     current_state = copy.deepcopy(INITIAL_STATE)
                     solution = None
                     current_step = 0
@@ -421,6 +436,7 @@ while running:
                     print("Reset to initial state")
                     
                 elif SET_INITIAL_BUTTON_RECT.collidepoint(x, y):
+                    is_playing = False
                     if is_customizing:
                         INITIAL_STATE = copy.deepcopy(current_state)
                         is_customizing = False
@@ -430,48 +446,37 @@ while running:
                         print("Now customizing initial state")
 
                 elif SENSORLESS_ENV_BUTTON_RECT.collidepoint(x, y):
+                    is_playing = False
                     in_sensorless_env = True
                     sensorless_env = SensorlessEnvironment(current_state, GOAL_STATE, screen, WIDTH, HEIGHT, SMALL_GRID_SIZE)
 
                 elif show_popup:
                     if YES_BUTTON_RECT.collidepoint(x, y):
+                        is_playing = False
                         show_popup = False
                     elif NO_BUTTON_RECT.collidepoint(x, y):
+                        is_playing = True
                         show_popup = False
-                        if solution:
-                            print("Running solution automatically...")
-                            for state in solution:
-                                current_state = state
-                                draw_board(current_state, solution, current_step, show_popup, selected_algorithm, 
-                                          combo_box, is_customizing, is_solution_found)
-                                pygame.time.wait(100)
-                            current_step = len(solution) - 1
-                            show_popup = False
-                    else:
-                        row = int((y - MAIN_GRID_Y) // TILE_SIZE)
-                        col = int((x - MAIN_GRID_X) // TILE_SIZE)
-                        if 0 <= row < 3 and 0 <= col < 3:
-                            idx = row * 3 + col
-                            empty_idx = find_empty(current_state)
-                            current_state[idx], current_state[empty_idx] = current_state[empty_idx], current_state[idx]
-                            solution = None
-                            current_step = 0
-                            show_popup = False
-                            is_solution_found = False
-
+                        last_step_time = current_time
+                        print("Starting automatic solution playback...")
                 else:
+                    # Handle tile movement with mouse click
                     row = int((y - MAIN_GRID_Y) // TILE_SIZE)
                     col = int((x - MAIN_GRID_X) // TILE_SIZE)
-                    if 0 <= row < 3 and 0 <= col < 3:
+                    if 0 <= row < 3 and 0 <= col < 3 and not is_playing:
                         idx = row * 3 + col
                         empty_idx = find_empty(current_state)
+                        # Check if the clicked tile is adjacent to the empty tile
+                        row_empty, col_empty = divmod(empty_idx, 3)
                         current_state[idx], current_state[empty_idx] = current_state[empty_idx], current_state[idx]
+                        solution = None
+                        current_step = 0
+                        is_solution_found = False
                         if not is_customizing:
-                            solution = None
-                            current_step = 0
-                            is_solution_found = False
+                            is_playing = False
 
             elif event.type == pygame.KEYDOWN:
+                is_playing = False
                 if event.key == pygame.K_UP:
                     current_state = move_tile(current_state, "up")
                     if not is_customizing:
@@ -498,14 +503,24 @@ while running:
                         is_solution_found = False
 
         else:
-            # Xử lý trang Sensorless Environment
+            # Handle Sensorless Environment page
             if not sensorless_env.handle_event(event):
                 in_sensorless_env = False
                 sensorless_env = None
 
+    # Handle automatic playback
+    if is_playing and solution and current_step < len(solution) - 1:
+        if current_time - last_step_time >= STEP_INTERVAL:
+            current_step += 1
+            current_state = solution[current_step]
+            last_step_time = current_time
+            if current_step == len(solution) - 1:
+                is_playing = False
+                print("Automatic playback completed.")
+
     if not in_sensorless_env:
         draw_board(current_state, solution, current_step, show_popup, selected_algorithm, combo_box, 
-                   is_customizing, is_solution_found)
+                   is_customizing, is_solution_found, is_playing)
     else:
         sensorless_env.draw()
 

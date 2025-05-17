@@ -121,7 +121,7 @@ class QLearningTrainer:
         self.is_training = False
         self.is_paused = False
         self.epsilon = 1.0
-        self.episodes = 50000
+        self.episodes = 100
         self.alpha = 0.1
         self.gamma = 0.9
         self.epsilon_start = 1.0
@@ -132,8 +132,8 @@ class QLearningTrainer:
         # Nút điều khiển
         self.BUTTON_WIDTH = WIDTH * 0.1
         self.BUTTON_HEIGHT = HEIGHT * 0.06
-        self.PAUSE_BUTTON_RECT = pygame.Rect(WIDTH * 0.05, HEIGHT * 0.8, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
-        self.SAVE_BUTTON_RECT = pygame.Rect(WIDTH * 0.2, HEIGHT * 0.8, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        self.PAUSE_BUTTON_RECT = pygame.Rect(WIDTH * 0.05, HEIGHT * 0.85, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        self.SAVE_BUTTON_RECT = pygame.Rect(WIDTH * 0.2, HEIGHT * 0.85, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
     def update_layout(self):
         global WIDTH, HEIGHT, TILE_SIZE, SMALL_GRID_SIZE, MAIN_GRID_X, MAIN_GRID_Y, GOAL_GRID_X, GOAL_GRID_Y, INFO_X, INFO_Y
@@ -148,8 +148,8 @@ class QLearningTrainer:
         INFO_Y = HEIGHT * 0.6
         self.BUTTON_WIDTH = WIDTH * 0.1
         self.BUTTON_HEIGHT = HEIGHT * 0.06
-        self.PAUSE_BUTTON_RECT = pygame.Rect(WIDTH * 0.05, HEIGHT * 0.8, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
-        self.SAVE_BUTTON_RECT = pygame.Rect(WIDTH * 0.2, HEIGHT * 0.8, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        self.PAUSE_BUTTON_RECT = pygame.Rect(WIDTH * 0.05, HEIGHT * 0.85, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
+        self.SAVE_BUTTON_RECT = pygame.Rect(WIDTH * 0.2, HEIGHT * 0.85, self.BUTTON_WIDTH, self.BUTTON_HEIGHT)
 
     def get_action(self, state):
         state_tuple = tuple(state)
@@ -243,7 +243,7 @@ class QLearningTrainer:
         ]
         for i, text in enumerate(info_texts):
             text_surface = font.render(text, True, BLACK)
-            screen.blit(text_surface, (INFO_X, INFO_Y + i * HEIGHT * 0.05))
+            screen.blit(text_surface, (INFO_X * 10, INFO_Y + i * HEIGHT * 0.05))
 
         # Vẽ nút Pause/Resume
         mouse_x, mouse_y = pygame.mouse.get_pos()
