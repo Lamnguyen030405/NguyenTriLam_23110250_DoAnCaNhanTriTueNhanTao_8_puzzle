@@ -1,5 +1,6 @@
 ﻿import pygame
 from solve import Solve
+from comboBox import ComboBox
 
 class SensorlessEnvironment:
     def __init__(self, start_state, goal_state, screen, width, height, small_grid_size):
@@ -21,12 +22,17 @@ class SensorlessEnvironment:
         self.solution = None
         self.current_step = 0
         self.is_solution_found = False
+        self.is_solved = False
         
         # Vị trí và kích thước các thành phần giao diện
-        self.SENSORLESS_SOLVE_BUTTON_RECT = pygame.Rect(self.width * 0.05, self.height * 0.05, self.width * 0.1, self.height * 0.06)
+        self.SENSORLESS_SOLVE_BUTTON_RECT = pygame.Rect(self.width * 0.3, self.height * 0.05, self.width * 0.1, self.height * 0.06)
         self.BACK_TO_MAIN_BUTTON_RECT = pygame.Rect(self.width * 0.85, self.height * 0.05, self.width * 0.15, self.height * 0.06)
-        self.SENSORLESS_NEXT_STEP_BUTTON_RECT = pygame.Rect(self.width * 0.2, self.height * 0.05, self.width * 0.1, self.height * 0.06)
-        self.SENSORLESS_BACK_BUTTON_RECT = pygame.Rect(self.width * 0.35, self.height * 0.05, self.width * 0.1, self.height * 0.06)
+        self.SENSORLESS_NEXT_STEP_BUTTON_RECT = pygame.Rect(self.width * 0.45, self.height * 0.05, self.width * 0.1, self.height * 0.06)
+        self.SENSORLESS_BACK_BUTTON_RECT = pygame.Rect(self.width * 0.6, self.height * 0.05, self.width * 0.1, self.height * 0.06)
+        
+        # Thêm ComboBox cho lựa chọn thuật toán
+        self.algo_combo_box = ComboBox(self.width * 0.05, self.height * 0.05, self.width * 0.2, self.height * 0.06,
+                                      ["Partially Observable", "No Observation"])
 
     def draw_small_board(self, state, position, label):
         """Hiển thị một trạng thái dưới dạng lưới 3x3 nhỏ"""
@@ -84,6 +90,9 @@ class SensorlessEnvironment:
             self.screen.blit(text, (self.width * 0.05, self.height * 0.52))
             self.draw_belief_state(current_belief_state, self.height * 0.6)
 
+        # Vẽ ComboBox
+        self.algo_combo_box.draw(self.screen)
+
         # Nút "Solve"
         mouse_x, mouse_y = pygame.mouse.get_pos()
         if self.SENSORLESS_SOLVE_BUTTON_RECT.collidepoint((mouse_x, mouse_y)):
@@ -128,43 +137,86 @@ class SensorlessEnvironment:
         if self.actions:
             font = pygame.font.Font(None, int(self.height * 0.045))
             text = font.render(f"Action Sequence: {self.actions}", True, (0, 0, 0))
-            self.screen.blit(text, (self.width * 0.05, self.height * 0.92))
+            self.screen.blit(text, (self.width * 0.05, self.height * 0.9))
 
-            if not self.is_solution_found:
+        if not self.is_solution_found and self.is_solved:
                 text = font.render("NO SOLUTION FOUND!", True, (255, 0, 0))
                 self.screen.blit(text, (self.width * 0.05, self.height * 0.9))
 
         pygame.display.flip()
 
     def handle_event(self, event):
+        # Xử lý sự kiện của ComboBox
+        if self.algo_combo_box.handle_event(event):
+            pass  # ComboBox tự xử lý việc chọn tùy chọn
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = event.pos
 
             # Nút "Solve"
             if self.SENSORLESS_SOLVE_BUTTON_RECT.collidepoint(x, y):
                 start_time = pygame.time.get_ticks() / 1000.0
-                self.actions = self.solver.solve_sensorless(max_steps=500)
+                if self.algo_combo_box.selected_option == "Partially Observable":
+                    self.actions = self.solver.solve_partially_observable(max_steps=100000)
+                elif self.algo_combo_box.selected_option == "No Observation":
+                    self.actions = self.solver.solve_no_observation(max_steps=50000)
                 end_time = pygame.time.get_ticks() / 1000.0
                 execution_time = end_time - start_time
 
                 if self.actions:
                     # Tạo solution: danh sách các belief states qua từng bước
                     self.solution = [list(self.initial_belief_states)]
+                    self.is_solved = True
                     temp_belief_state = self.initial_belief_states
-                    for action in self.actions:
-                        temp_belief_state = self.solver.apply_action_to_belief_state(temp_belief_state, action)
-                        self.solution.append(list(temp_belief_state))
-                    
-                    # Kiểm tra xem belief state cuối cùng có chỉ chứa goal_state không
-                    final_belief_state = set(temp_belief_state)
-                    self.is_solution_found = len(final_belief_state) == 1 and list(final_belief_state)[0] == tuple(self.goal_state)
-                    print(f"Sensorless Search completed! Action sequence: {self.actions}")
+                    actual_state = self.start_state  # Để mô phỏng actual_state như trong solve_partially_observable
+
+                    if self.algo_combo_box.selected_option == "No Observation":
+                        for action in self.actions:
+                            # Áp dụng hành động để tạo belief state mới
+                            temp_belief_state = self.solver.apply_action_to_belief_state(temp_belief_state, action)
+
+                            new_belief_state = set()
+                            for state in temp_belief_state:
+                                new_belief_state.add(tuple(state))
+                            temp_belief_state = new_belief_state
+
+                            self.solution.append(list(temp_belief_state))
+    
+                        # Kiểm tra xem belief state cuối cùng có thỏa mãn điều kiện không
+                        final_belief_state = set(temp_belief_state)
+                        # Solve No Observation: Belief state cuối cùng phải chỉ chứa goal_state
+                        self.is_solution_found = len(final_belief_state) == 1 and list(final_belief_state)[0] == tuple(self.goal_state)
+                    else:
+                        for action in self.actions:
+                            # Áp dụng hành động để tạo belief state mới
+                            temp_belief_state = self.solver.apply_action_to_belief_state(temp_belief_state, action)
+
+                            # Mô phỏng actual_state và lấy percept
+                            actual_state = self.solver.apply_action(actual_state, action)
+                            actual_percept = self.solver.percept(actual_state)
+
+                            # Thu hẹp belief state dựa trên percept (tương tự như update trong solve_partially_observable)
+                            new_belief_state = set()
+                            for state in temp_belief_state:
+                                if self.solver.percept(state) == actual_percept:
+                                    new_belief_state.add(tuple(state))
+                            temp_belief_state = new_belief_state
+
+                            self.solution.append(list(temp_belief_state))
+    
+                        # Kiểm tra xem belief state cuối cùng có thỏa mãn điều kiện không
+                        final_belief_state = set(temp_belief_state)
+                        # Partially Observable: Chỉ cần goal_state nằm trong belief_state
+                        self.is_solution_found = tuple(self.goal_state) in final_belief_state
+
+                    print(f"{self.algo_combo_box.selected_option} completed! Action sequence: {self.actions}")
                     print(f"Number of actions: {len(self.actions)}")
                     print(f"Execution Time: {execution_time:.6f} seconds")
                 else:
                     self.is_solution_found = False
                     self.solution = None  # Không có giải pháp, không hiển thị các bước
-                    print("No solution found with Sensorless Search!")
+                    self.is_solved = True
+                    print(f"No solution found with {self.algo_combo_box.selected_option}!")
                     print(f"Execution Time: {execution_time:.6f} seconds")
 
                 self.current_step = 0

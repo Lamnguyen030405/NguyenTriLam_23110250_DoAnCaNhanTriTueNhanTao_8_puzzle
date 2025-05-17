@@ -3,6 +3,9 @@ from collections import deque
 import copy
 import random
 import math
+import pickle
+from collections import defaultdict
+from Qlearning import SlidingPuzzleEnv
 
 class Solve:
     def __init__(self, start_state, goal_state):
@@ -689,8 +692,8 @@ class Solve:
             # Replace old population with new population
             population = new_population
     
-        # If we reached here, we've exhausted all generations without finding a solution
-        # Return the path of the best solution found so far
+        # Nếu chúng ta đã đạt đến đây, chúng ta đã sử dụng hết tất cả các thế hệ mà không tìm thấy giải pháp
+        # Trả về đường đi của giải pháp tốt nhất tìm thấy cho đến nay
         if best_solution is not None:
             return apply_moves(self.start_state, best_solution)
     
@@ -816,7 +819,7 @@ class Solve:
             new_belief_state.add(new_state)
         return new_belief_state
 
-    def solve_sensorless(self, max_steps=50):
+    def solve_no_observation(self, max_steps=50):
         """
         Giải bài toán Sensorless Sliding Puzzle bằng BFS trong không gian belief state.
         - max_steps: Giới hạn số bước để tránh tìm kiếm quá lâu.
@@ -839,7 +842,7 @@ class Solve:
         visited = {initial_belief_state}
 
         step = 0
-        while queue:
+        while queue and step < max_steps:
             belief_state, actions_taken = queue.popleft()
             step += 1
 
@@ -860,3 +863,367 @@ class Solve:
 
         return None
 
+    def percept(self, state):
+        """
+        Hàm PERCEPT: Trả về thông tin quan sát được từ trạng thái.
+        Giả định: Chỉ nhìn thấy giá trị ở góc trên cùng bên trái (vị trí 0).
+        """
+        return state[0]
+
+    def predict(self, belief_state, action):
+        """
+        Giai đoạn Prediction: Tính predicted belief state sau khi thực hiện hành động.
+        """
+        return self.apply_action_to_belief_state(belief_state, action)
+
+    def possible_percepts(self, belief_state):
+        """
+        Giai đoạn Possible Percepts: Tính tập hợp các percept có thể nhận được.
+        """
+        percepts = set()
+        for state in belief_state:
+            percept = self.percept(state)
+            percepts.add(percept)
+        return percepts
+
+    def update(self, belief_state, percept):
+        """
+        Giai đoạn Update: Cập nhật belief state dựa trên percept.
+        """
+        new_belief_state = set()
+        for state in belief_state:
+            if self.percept(state) == percept:
+                new_belief_state.add(state)
+        return new_belief_state
+
+    def results(self, belief_state, action):
+        """
+        Tính tập hợp các belief states mới sau khi thực hiện hành động và nhận percept.
+        """
+        predicted_belief_state = self.predict(belief_state, action)
+        possible_percepts = self.possible_percepts(predicted_belief_state)
+        results = {}
+        for percept in possible_percepts:
+            updated_belief_state = self.update(predicted_belief_state, percept)
+            results[percept] = updated_belief_state
+        return results
+
+    def solve_partially_observable(self, max_steps=50):
+        """
+        Giải bài toán Sliding Puzzle trong môi trường quan sát một phần bằng BFS.
+        - max_steps: Giới hạn số bước để tránh tìm kiếm quá lâu.
+        Trả về một chuỗi hành động dẫn đến trạng thái mục tiêu, hoặc None nếu không tìm thấy.
+        Lưu ý: Chỉ cần goal_state nằm trong belief_state cuối cùng.
+        """
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return None
+
+        # Khởi tạo belief state ban đầu với start_state và các trạng thái lân cận
+        initial_belief_states = {tuple(self.start_state)}
+        for neighbor in self.get_neighbors(self.start_state):
+            initial_belief_states.add(tuple(neighbor))
+        initial_belief_state = frozenset(initial_belief_states)
+
+        actions = ["up", "down", "left", "right"]
+
+        # Hàng đợi cho BFS: (belief_state, actions_taken, actual_state)
+        queue = deque([(initial_belief_state, [], self.start_state)])
+        visited = {initial_belief_state}  # Belief states đã thăm
+
+        step = 0
+        while queue:
+            belief_state, actions_taken, actual_state = queue.popleft()
+            step += 1
+
+            # Kiểm tra xem goal_state có nằm trong belief_state không
+            belief_state_set = set(belief_state)
+            if tuple(self.goal_state) in belief_state_set:
+                return actions_taken
+
+            # Thử tất cả các hành động
+            for action in actions:
+                # Tính các belief states mới sau hành động
+                results = self.results(belief_state, action)
+                if not results:
+                    continue
+
+                # Mô phỏng trạng thái thực tế sau khi thực hiện hành động
+                new_actual_state = self.apply_action(actual_state, action)
+
+                # Lấy percept thực tế từ trạng thái thực tế
+                actual_percept = self.percept(new_actual_state)
+
+                # Chọn nhánh tương ứng với percept thực tế
+                if actual_percept not in results:
+                    continue  # Nếu percept thực tế không khớp, bỏ qua nhánh này
+
+                new_belief_state = results[actual_percept]
+                new_belief_state_frozen = frozenset(new_belief_state)
+
+                if new_belief_state_frozen not in visited:
+                    visited.add(new_belief_state_frozen)
+                    new_actions = actions_taken + [action]
+                    queue.append((new_belief_state, new_actions, new_actual_state))
+
+        # Nếu không tìm thấy giải pháp trong max_steps, trả về None
+        return None
+
+    def solve_with_backtracking(self, max_depth=50):
+        """
+        Giải bài toán Sliding Puzzle bằng Backtracking Search.
+        - max_depth: Giới hạn độ sâu tìm kiếm để tránh vòng lặp vô hạn.
+        Trả về đường đi dẫn đến trạng thái mục tiêu, hoặc đường đi tốt nhất nếu không tìm thấy.
+        """
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return None
+
+        # Theo dõi đường đi tốt nhất (dựa trên khoảng cách Manhattan nhỏ nhất)
+        best_info = {
+            'path': [self.start_state],
+            'distance': self.manhattan_distance(self.start_state, self.goal_state)
+        }
+
+        def backtrack(state, path, depth, visited):
+            """Hàm đệ quy thực hiện Backtracking Search."""
+            # Cập nhật đường đi tốt nhất
+            current_distance = self.manhattan_distance(state, self.goal_state)
+            if current_distance < best_info['distance']:
+                best_info['distance'] = current_distance
+                best_info['path'] = path
+
+            # Điều kiện dừng: Đạt trạng thái mục tiêu
+            if state == self.goal_state:
+                return path
+
+            # Điều kiện dừng: Đạt độ sâu tối đa
+            if depth >= max_depth:
+                return None
+
+            # Lấy các trạng thái lân cận (tương ứng với "miền giá trị" trong CSP)
+            neighbors = self.get_neighbors(state)
+            # Sắp xếp neighbors theo khoảng cách Manhattan (heuristic LCV)
+            neighbors.sort(key=lambda x: self.manhattan_distance(x, self.goal_state))
+
+            # Thử từng trạng thái lân cận
+            for next_state in neighbors:
+                state_tuple = tuple(next_state)
+                if state_tuple not in visited:
+                    visited.add(state_tuple)
+                    new_path = path + [next_state]
+                    result = backtrack(next_state, new_path, depth + 1, visited)
+                    if result is not None:
+                        return result
+                    visited.remove(state_tuple)  # Quay lui (backtrack)
+
+            return None
+
+        # Khởi động Backtracking Search
+        visited = {tuple(self.start_state)}
+        path = [self.start_state]
+        solution = backtrack(self.start_state, path, 0, visited)
+
+        # Nếu tìm thấy giải pháp, trả về giải pháp
+        if solution is not None:
+            return solution
+        # Nếu không, trả về đường đi tốt nhất
+        return best_info['path']
+
+    def revise(self, domains, Xi, Xj):
+        """
+        Hàm revise kiểm tra và sửa đổi miền của Xi dựa trên ràng buộc với Xj.
+        Trả về True nếu miền của Xi bị thay đổi, False nếu không.
+        """
+        revised = False
+        # Trong Sliding Puzzle, ràng buộc là ô trống chỉ di chuyển đến ô lân cận
+        # Giả định miền của Xj là các giá trị có thể đạt được từ start_state
+        empty_idx = self.find_empty(self.start_state)
+        row, col = divmod(empty_idx, 3)
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        for dx, dy in directions:
+            new_row, new_col = row + dx, col + dy
+            if 0 <= new_row < 3 and 0 <= new_col < 3:
+                new_idx = new_row * 3 + new_col
+                if new_idx == Xj:
+                    # Kiểm tra giá trị trong miền của Xi
+                    to_remove = []
+                    for value in domains[Xi]:
+                        # Giả định ràng buộc: Nếu Xi không thể di chuyển để khớp với Xj, loại bỏ
+                        # Đây là cách đơn giản hóa, vì Sliding Puzzle có ràng buộc toàn cục
+                        if value != self.start_state[Xi] and value != 0:  # Chỉ giữ giá trị hiện tại hoặc ô trống
+                            to_remove.append(value)
+                    for value in to_remove:
+                        domains[Xi].remove(value)
+                        revised = True
+
+        return revised
+
+    def apply_ac3(self):
+        """
+        Thực hiện thuật toán AC-3 để áp dụng tính nhất quán cung (arc consistency).
+        Trả về True nếu CSP vẫn có giải pháp, False nếu không, và cập nhật miền giá trị của các biến.
+        """
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return False
+
+        # Khởi tạo miền giá trị ban đầu cho mỗi ô (0 đến 8)
+        domains = {i: list(range(9)) for i in range(9)}
+        for i, value in enumerate(self.start_state):
+            if value != 0:  # Ô trống (0) có thể thay đổi, các ô khác cố định
+                domains[i] = [value]
+
+        # Khởi tạo queue với tất cả các cung (arcs)
+        # Mỗi cung (i, j) đại diện cho ràng buộc giữa ô i và ô j (dựa trên di chuyển ô trống)
+        queue = []
+        for i in range(9):
+            empty_idx = self.find_empty(self.start_state)
+            row, col = divmod(empty_idx, 3)
+            directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+            for dx, dy in directions:
+                new_row, new_col = row + dx, col + dy
+                if 0 <= new_row < 3 and 0 <= new_col < 3:
+                    new_idx = new_row * 3 + new_col
+                    if i != new_idx:  # Tránh cung tự phản xạ
+                        queue.append((i, new_idx))
+
+        # Xóa trùng lặp trong queue
+        queue = list(set(queue))
+
+        while queue:
+            (Xi, Xj) = queue.pop(0)
+            if self.revise(domains, Xi, Xj):
+                if not domains[Xi]:  # Nếu miền của Xi rỗng
+                    return False
+                # Thêm các cung mới liên quan đến Xi vào queue
+                empty_idx = self.find_empty(self.start_state)
+                row, col = divmod(empty_idx, 3)
+                for dx, dy in directions:
+                    new_row, new_col = row + dx, col + dy
+                    if 0 <= new_row < 3 and 0 <= new_col < 3:
+                        new_idx = new_row * 3 + new_col
+                        if new_idx != Xj and new_idx != Xi and (new_idx, Xi) not in queue:
+                            queue.append((new_idx, Xi))
+
+        return True
+
+    def solve_with_ac3(self):
+        """
+        Sử dụng thuật toán AC-3 để tiền xử lý, sau đó tìm đường đi từ start_state đến goal_state.
+        Trả về đường đi nếu có, hoặc None nếu không có giải pháp.
+        """
+        # Bước 1: Áp dụng AC-3 để kiểm tra tính khả thi
+        ac3_result = self.apply_ac3()
+        if not ac3_result:
+            return None  # Không có giải pháp
+
+        # Bước 2: Sử dụng A* để tìm đường đi
+        # Vì AC-3 không thay đổi trạng thái tìm kiếm trong Sliding Puzzle,
+        # chúng ta gọi trực tiếp solve_with_astar
+        return self.solve_with_astar()
+
+    def save_q_table(self, Q, filename="q_table.pkl"):
+        with open(filename, 'wb') as f:
+            pickle.dump(Q, f)
+
+    def load_q_table(self, filename="q_table.pkl"):
+        try:
+            with open(filename, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            return defaultdict(lambda: {action: 0 for action in ["up", "down", "left", "right"]})
+
+    def train_q_learning(self, env, episodes=50000, alpha=0.1, gamma=0.9, epsilon_start=1.0, epsilon_end=0.1, epsilon_decay=0.995, max_steps=100, q_table_file="q_table.pkl"):
+        Q = self.load_q_table(q_table_file)
+        actions = ["up", "down", "left", "right"]
+
+        epsilon = epsilon_start
+        for episode in range(episodes):
+            state = env.reset(random_state=True)
+            step = 0
+
+            while step < max_steps:
+                state_tuple = tuple(state)
+                if state_tuple not in Q:
+                    Q[state_tuple] = {action: 0 for action in actions}
+
+                if random.random() < epsilon:
+                    action = random.choice(actions)
+                else:
+                    action = max(Q[state_tuple], key=Q[state_tuple].get)
+
+                new_state, reward, done = env.step(action)
+                new_state_tuple = tuple(new_state)
+                if new_state_tuple not in Q:
+                    Q[new_state_tuple] = {action: 0 for action in actions}
+
+                old_q = Q[state_tuple][action]
+                future_q = max(Q[new_state_tuple].values())
+                Q[state_tuple][action] = (1 - alpha) * old_q + alpha * (reward + gamma * future_q)
+
+                state = new_state
+                step += 1
+
+                if done:
+                    break
+
+            epsilon = max(epsilon_end, epsilon * epsilon_decay)
+
+        self.save_q_table(Q, q_table_file)
+        return Q
+
+    def solve_with_trained_q(self, Q, max_steps=100):
+        best_path = [self.start_state]
+        best_distance = self.manhattan_distance(self.start_state, self.goal_state)
+
+        current_state = list(self.start_state)
+        path = [current_state]
+        visited = {tuple(current_state)}
+        step = 0
+        actions = ["up", "down", "left", "right"]
+
+        while step < max_steps:
+            state_tuple = tuple(current_state)
+            if state_tuple not in Q:
+                break
+            action = max(Q[state_tuple], key=Q[state_tuple].get)
+            next_states = self.get_neighbors(current_state)
+            valid_action = False
+            for next_state in next_states:
+                if self.get_action_from_state(current_state, next_state) == action:
+                    valid_action = True
+                    new_state = next_state
+                    break
+
+            if not valid_action:
+                break
+
+            current_distance = self.manhattan_distance(new_state, self.goal_state)
+            if current_distance < best_distance:
+                best_distance = current_distance
+                best_path = path + [new_state]
+
+            current_state = new_state
+            if tuple(current_state) in visited:
+                break
+            visited.add(tuple(current_state))
+            path.append(current_state)
+            step += 1
+
+            if current_state == self.goal_state:
+                return path
+
+        return best_path
+
+    def solve_with_q_learning(self, episodes=50000, alpha=0.1, gamma=0.9, epsilon_start=1.0, epsilon_end=0.1, epsilon_decay=0.995, max_steps=100):
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return None
+
+        # Thử tải Q-table đã huấn luyện
+        Q = self.load_q_table("q_table.pkl")
+        if Q and any(Q.values()):  # Kiểm tra xem Q-table có dữ liệu không
+            print("Using pre-trained Q-table")
+            return self.solve_with_trained_q(Q, max_steps)
+        else:
+            print("No pre-trained Q-table found or Q-table is empty, training new one")
+            env = SlidingPuzzleEnv(self.goal_state)
+            Q = self.train_q_learning(env, episodes, alpha, gamma, epsilon_start, epsilon_end, epsilon_decay, max_steps)
+            return self.solve_with_trained_q(Q, max_steps)

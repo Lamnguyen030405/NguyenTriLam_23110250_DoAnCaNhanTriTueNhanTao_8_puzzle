@@ -5,6 +5,7 @@ from solve import Solve
 import time
 import numpy as np
 from sensorless_env import SensorlessEnvironment
+import threading
 
 pygame.init()
 
@@ -93,7 +94,7 @@ def update_layout():
 combo_box = ComboBox(WIDTH * 0.05, HEIGHT * 0.05, WIDTH * 0.2, HEIGHT * 0.05, 
                      ["BFS", "DFS", "UCS", "IDS", "Greedy", "A*", "IDA*", "Hill Climbing", 
                       "SA Hill Climbing", "Stochastic Hill Climbing", "Beam Search", "Annealing", 
-                      "Genetic Algorithm", "AND-OR Graph"])
+                      "Genetic Algorithm", "AND-OR Graph", "Backtracking", "AC-3 and A*", "Q - Learning"])
 
 execution_history = []
 
@@ -351,6 +352,31 @@ while running:
                         )
                     elif selected_algorithm == "AND-OR Graph":
                         solution = solve.solve_with_and_or_graph()
+                    elif selected_algorithm == "Backtracking":
+                        solution = solve.solve_with_backtracking(5000)
+                    elif selected_algorithm == "AC-3 and A*":
+                        solution = solve.solve_with_ac3()
+                    elif selected_algorithm == "Q - Learning":
+                       def run_q_learning():
+                            global solution, is_solution_found
+                            solution = solve.solve_with_q_learning(episodes=50000)
+                            end_time = time.time()
+                            execution_time = end_time - start_time
+                            if solution and solution[-1] == GOAL_STATE:
+                                is_solution_found = True
+                                execution_history.append((selected_algorithm, execution_time, True))
+                                print(f"Solution found with {selected_algorithm}! Steps: {len(solution) - 1}")
+                                print(f"Execution Time: {execution_time:.6f} seconds")
+                            else:
+                                is_solution_found = False
+                                execution_history.append((selected_algorithm, execution_time, False))
+                                print(f"No solution found with {selected_algorithm}! Showing best state reached.")
+                                print(f"Execution Time: {execution_time:.6f} seconds")
+                            global show_popup
+                            show_popup = True
+
+                       print("Running Q-Learning... This may take a while.")
+                       threading.Thread(target=run_q_learning, daemon=True).start()
 
                     end_time = time.time()
                     execution_time = end_time - start_time
