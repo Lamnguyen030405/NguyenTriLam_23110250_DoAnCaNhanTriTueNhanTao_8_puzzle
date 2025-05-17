@@ -7,7 +7,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
 
 ## 🧠 Các thuật toán được triển khai
 ## Uninformed search algorithms
-
+---
 ### 1. **Khái niệm chung về Uninformed Search Algorithms**
 - **Uninformed Search** (tìm kiếm mù) là các thuật toán tìm kiếm không sử dụng thông tin heuristic (thông tin bổ sung về chi phí ước lượng đến mục tiêu). Chúng dựa vào cấu trúc của không gian tìm kiếm và các quy tắc cố định để khám phá các trạng thái.
 - **Các thành phần chính**:
@@ -17,7 +17,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
   - **Hành động (Actions)**: Các thao tác có thể thực hiện để chuyển từ trạng thái này sang trạng thái khác.
   - **Chi phí đường đi (Path Cost)**: Chi phí liên quan đến mỗi hành động hoặc đường đi (nếu có).
   - **Cấu trúc dữ liệu**: Thường sử dụng hàng đợi (queue), ngăn xếp (stack) hoặc hàng đợi ưu tiên (priority queue) để quản lý các trạng thái cần khám phá.
-
+---
 ### 2. **Các thuật toán Uninformed Search**
 
 #### a. **Breadth-First Search (BFS - Tìm kiếm theo chiều rộng)**
@@ -77,7 +77,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
     - Thời gian: O(b^d), tương tự BFS nhưng lặp lại nhiều lần.
     - Không gian: O(bd), tương tự DFS.
 - **Ứng dụng**: Khi cần kết hợp ưu điểm của BFS (tối ưu) và DFS (tiết kiệm bộ nhớ).
-
+---
 ### 3. **So sánh tổng quát**
 | Thuật toán | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
 |------------|------------|--------|-----------------------|------------------------|----------------|
@@ -85,7 +85,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
 | **DFS**    | Không (nếu có chu kỳ) | Không | O(b^m) | O(bm) | Không gian lớn, không cần tối ưu |
 | **UCS**    | Có (nếu chi phí > 0) | Có | O(b^(C*/ε)) | O(b^(C*/ε)) | Đường đi tối ưu (có trọng số) |
 | **IDS**    | Có (nếu hữu hạn) | Có (nếu chi phí đồng nhất) | O(b^d) | O(bd) | Kết hợp BFS và DFS |
-
+---
 ### 4. **Giải pháp tổng quát của Uninformed Search**
 - **Quy trình chung**:
   1. Xác định trạng thái ban đầu và mục tiêu.
@@ -116,7 +116,7 @@ Xây dựng một chương trình giải bài toán **8-Puzzle** sử dụng nhi
 - `b`: số nhánh trung bình (branching factor)
 - `d`: độ sâu của lời giải tối ưu
 - `m`: độ sâu tối đa của cây tìm kiếm
-
+---
 ### 📝 Nhận xét chung:
 
 Các thuật toán tìm kiếm không thông tin (Uninformed Search) đều không có kiến thức cụ thể về vị trí đích, do đó phải **duyệt toàn bộ không gian trạng thái một cách mù mờ**. Mỗi thuật toán có đặc điểm riêng:
@@ -127,9 +127,9 @@ Các thuật toán tìm kiếm không thông tin (Uninformed Search) đều khô
 * **IDS** kết hợp ưu điểm của BFS và DFS: đảm bảo tối ưu, tiết kiệm bộ nhớ, nhưng **thời gian chạy lâu hơn do phải lặp lại nhiều lần**.
 
 Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và cần lời giải tối ưu, **BFS, UCS hoặc IDS** là lựa chọn phù hợp. Tuy nhiên, khi bộ nhớ hạn chế, **IDS** thường là phương án an toàn hơn.
-
+---
 ## Informed Search Algorithms
-
+---
 ### 1. **Khái niệm chung về Informed Search Algorithms**
 - **Informed Search** (tìm kiếm có thông tin) sử dụng **hàm heuristic** để ước lượng chi phí từ trạng thái hiện tại đến trạng thái mục tiêu, giúp định hướng tìm kiếm hiệu quả hơn so với Uninformed Search (BFS, DFS, UCS, IDS).
 - **Các thành phần chính**:
@@ -140,7 +140,7 @@ Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và c�
   - **Chi phí đường đi (Path Cost, g(n))**: Tổng chi phí từ trạng thái ban đầu đến trạng thái hiện tại (thường là số bước hoặc chi phí cụ thể của hành động).
   - **Hàm heuristic (h(n))**: Hàm ước lượng chi phí từ trạng thái hiện tại đến mục tiêu. Hàm này phải **admissible** (không overestimated) và lý tưởng là **consistent** (đáp ứng bất đẳng thức tam giác) để đảm bảo tính tối ưu.
   - **Cấu trúc dữ liệu**: Thường sử dụng hàng đợi ưu tiên (priority queue) để ưu tiên trạng thái có chi phí thấp nhất hoặc giá trị heuristic nhỏ nhất.
-
+---
 ### 2. **Các thuật toán Informed Search**
 
 #### a. **A* Search**
@@ -224,7 +224,7 @@ Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và c�
 - **Yêu cầu**:
   - Cần thiết kế hàm heuristic phù hợp (admissible và consistent cho A* và IDA*).
   - Kiểm tra chu kỳ hoặc trạng thái lặp để tránh vòng lặp vô hạn.
-
+---
 
 ### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
 | **Thuật Toán**                       | **Minh Họa GIF**                                      |
@@ -247,7 +247,7 @@ Với bài toán như **8-puzzle**, nơi không gian trạng thái lớn và c�
 * `d`: Độ sâu của lời giải tối ưu.
 * `m`: Độ sâu tối đa của không gian trạng thái.
 * **Heuristic sử dụng**: *Khoảng cách Manhattan* là heuristic **admissible** và **consistent**, đảm bảo tính tối ưu cho thuật toán **A\*** và **IDA\***.
-
+---
 ### 📝 **Nhận xét chung:**
 
 Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***, **IDA\*** và **Greedy Best-First Search** tận dụng heuristic để hướng dẫn quá trình tìm kiếm hiệu quả hơn so với các thuật toán không thông tin.
@@ -261,10 +261,10 @@ Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***
 * Nếu **ưu tiên chất lượng lời giải** và **có đủ tài nguyên**, hãy chọn **A\***.
 * Nếu **ưu tiên tiết kiệm bộ nhớ**, chọn **IDA\***.
 * Nếu **cần kết quả nhanh** và **không quá quan tâm tối ưu**, có thể thử **Greedy**.
-
+---
 
 ## Local Search Algorithms
-
+---
 ### 1. **Khái niệm chung về Local Search Algorithms**
 - **Local Search** (tìm kiếm cục bộ) tập trung vào việc cải thiện một giải pháp hiện tại bằng cách khám phá các trạng thái lân cận, thay vì khám phá toàn bộ không gian trạng thái như các thuật toán Informed/Uninformed Search.
 - Không duy trì một cây tìm kiếm hoặc hàng đợi các trạng thái, mà chỉ làm việc với trạng thái hiện tại và các trạng thái lân cận của nó.
@@ -411,7 +411,7 @@ Các thuật toán **tìm kiếm có thông tin (Informed Search)** như **A\***
   - Hàm mục tiêu hiệu quả, phản ánh đúng chất lượng giải pháp.
   - Cơ chế thoát khỏi cực trị cục bộ (như ngẫu nhiên hóa hoặc lịch trình nhiệt độ).
   - Điều chỉnh tham số (nhiệt độ, kích thước beam, population, v.v.) để cân bằng giữa chất lượng và hiệu suất.
-    
+---    
 ### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
 
 | **Thuật Toán**                           | **Minh Họa GIF**                                           |
@@ -463,7 +463,7 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Genetic Algorithm**:
   - Phù hợp cho không gian trạng thái lớn, nhưng trong 8-puzzle, hiệu suất thấp hơn do chi phí tính toán cao và khó điều chỉnh tham số.
   - Cách biểu diễn chuỗi di chuyển trong mã sáng tạo, nhưng không đảm bảo tìm mục tiêu chính xác.
-
+---
 ## Search with Nondeterministic Actions
 
 ---
@@ -521,12 +521,12 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Ứng dụng**:
   - Bài toán trong môi trường không xác định, như lập kế hoạch trong robotics, trò chơi với đối thủ (adversarial games), hoặc bài toán như 8-puzzle với nhiễu (ví dụ: ô trống di chuyển ngẫu nhiên).
   - Xử lý các tình huống cần kế hoạch có điều kiện, đảm bảo thành công bất kể kết quả nào xảy ra.
-
+---
 ### 3. **So sánh tổng quát**
 | Thuật toán           | Hoàn chỉnh | Tối ưu | Độ phức tạp thời gian | Độ phức tạp không gian | Ứng dụng chính |
 |----------------------|------------|--------|-----------------------|------------------------|----------------|
 | **AND-OR Search Trees** | Có (nếu hữu hạn) | Có (nếu dùng heuristic) | O(b^m)               | O(bm)                 | Lập kế hoạch trong môi trường không xác định (robotics, trò chơi, 8-puzzle với nhiễu) |
-
+---
 ### 4. **Cấu trúc của AND-OR Search Tree**
 - **OR nodes**:
   - Đại diện cho trạng thái mà tác nhân phải chọn hành động.
@@ -548,7 +548,7 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
   - Độ phức tạp cao trong môi trường có nhiều kết quả không xác định.
   - Yêu cầu bộ nhớ lớn nếu không gian trạng thái phức tạp, trừ khi sử dụng kỹ thuật tối ưu như lưu trữ trạng thái đã thăm.
   - Cần xác định rõ các kết quả không xác định của mỗi hành động, có thể khó trong một số bài toán thực tế.
-
+---
 ### 📷 **Hình ảnh các thuật toán được áp dụng trong trò chơi**
 
 | **Thuật Toán**             | **Minh Họa GIF**                                         |
@@ -567,14 +567,14 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Heuristic**: Khoảng cách Manhattan được sử dụng trong mã, là admissible và giúp ưu tiên các nhánh OR hiệu quả.
 - **Môi trường không xác định**: Trong `solve.py`, giả định rằng mỗi hành động có thể dẫn đến một tập hợp trạng thái (AND nodes), ví dụ: do nhiễu hoặc đối thủ.
 
-
-### 3. **Nhận xét chung**
+---
+### 📝 **Nhận xét chung:**
   - AND-OR Search Tree là lựa chọn phù hợp khi bài toán 8-puzzle được mở rộng để bao gồm yếu tố không xác định, như nhiễu môi trường hoặc hành động của đối thủ làm thay đổi trạng thái.
   - Trong mã, việc sử dụng khoảng cách Manhattan làm heuristic giúp thuật toán ưu tiên các hành động đưa trạng thái gần mục tiêu, cải thiện hiệu suất so với tìm kiếm không định hướng.
   - Tuy nhiên, thuật toán này không hiệu quả bằng các thuật toán xác định như A* hoặc IDA* trong 8-puzzle thông thường, vì nó phải xử lý nhiều kết quả không xác định, làm tăng chi phí tính toán.
-
+---
 ## Searching with no observation và Searching in partially observable environments
-
+---
 ### 1. **Searching with No Observation (Tìm kiếm không quan sát)**
 
 #### **Khái niệm chung**
@@ -719,8 +719,8 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **|B|**: Kích thước không gian tập niềm tin, có thể lên đến 9!/2 (≈ 181,440) trong 8-puzzle nếu không có hoặc ít quan sát.
 - **d**: Độ sâu kế hoạch hoặc số bước cần thiết để đạt mục tiêu.
 - **Heuristic**: Khoảng cách Manhattan được sử dụng trong mã, giúp ưu tiên hành động nhưng không đảm bảo tối ưu trong môi trường không xác định.
-
-### 3. **Nhận xét chung**
+---
+### 📝 **Nhận xét chung:**
 - **Searching with No Observation**:
   - Phù hợp cho các kịch bản 8-puzzle không có cảm biến, nhưng hiệu suất thấp do tập niềm tin có thể mở rộng nhanh chóng (đặc biệt trong môi trường không xác định).
   - Trong mã, việc sử dụng khoảng cách Manhattan làm heuristic giúp giảm số hành động cần xem xét, nhưng vẫn không thể cạnh tranh với các thuật toán như A* trong môi trường xác định.
@@ -732,16 +732,15 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Tình huống phù hợp**:
   - **No Observation**: Hữu ích khi 8-puzzle được mô hình hóa không có cảm biến (ví dụ: tác nhân chỉ biết trạng thái ban đầu và thực hiện chuỗi di chuyển cố định).
   - **Partially Observable**: Phù hợp khi có quan sát một phần (ví dụ: biết vị trí ô trống), đặc biệt trong các kịch bản thực tế như robotics hoặc trò chơi với thông tin hạn chế.
-    
+---
 ### Constraint Satisfaction Problems
-
+---
 ### 1. **Khái niệm chung về Constraint Satisfaction Problems (CSPs)**
 - **Constraint Satisfaction Problems (CSPs)** là một cách biểu diễn bài toán tìm kiếm, trong đó mục tiêu là gán giá trị cho các biến sao cho thỏa mãn một tập hợp các ràng buộc (constraints).
 - CSPs thường được sử dụng trong các bài toán có cấu trúc ràng buộc rõ ràng, như lập lịch, tô màu bản đồ, hoặc giải câu đố logic.
 - Thay vì tìm kiếm trực tiếp trong không gian trạng thái, CSPs biểu diễn bài toán dưới dạng **biến**, **miền giá trị**, và **ràng buộc**, sau đó sử dụng các kỹ thuật như AC-3 và Backtracking để tìm giải pháp.
 
 ---
-
 ### 2. **Các thành phần chính của CSPs**
 - **Biến (Variables)**: Các đối tượng cần gán giá trị (ví dụ: trong 8-puzzle, mỗi ô có thể được xem là một biến đại diện cho giá trị tại vị trí đó).
 - **Miền giá trị (Domains)**: Tập hợp các giá trị khả thi cho mỗi biến (ví dụ: trong 8-puzzle, miền giá trị là {0, 1, 2, ..., 8}, với 0 là ô trống).
@@ -753,7 +752,6 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 - **Không gian trạng thái**: Tập hợp tất cả các gán giá trị có thể cho các biến, giới hạn bởi miền giá trị và ràng buộc.
 
 ---
-
 ### 3. **Giải pháp tổng quát của CSPs**
 
 #### **a. AC-3 (Arc Consistency Algorithm)**
@@ -805,7 +803,6 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
   - Trong 8-puzzle, Backtracking có thể gán giá trị cho các ô (hoặc chuỗi di chuyển) để đạt trạng thái mục tiêu, nhưng thường cần kết hợp với AC-3 để giảm không gian tìm kiếm.
 
 ---
-
 ### 4. **Giải pháp tổng quát của CSPs**
 - **Quy trình chung**:
   1. **Biểu diễn bài toán**:
@@ -850,9 +847,9 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 |----------------------------|-----------------------------------------------------------------|
 | **AC-3 and A\***           | <img src="images/ac3_astar.gif" width="500" alt="AC-3 and A*">  |
 | **Backtracking**           | <img src="images/backtracking.gif" width="500" alt="Backtracking"> |
-
+---
 ## Reinforcement Learning
-
+---
 ### 1. **Khái niệm chung về Reinforcement Learning và Q-Learning**
 - **Reinforcement Learning (RL)** là một phương pháp học máy, trong đó một tác nhân (agent) học cách đưa ra quyết định bằng cách thử và sai trong một môi trường động, nhằm tối đa hóa phần thưởng tích lũy (cumulative reward).
 - **Q-Learning** là một thuật toán RL không dựa trên mô hình (model-free), thuộc nhóm **Temporal Difference (TD) Learning**, học một chính sách tối ưu thông qua việc ước lượng giá trị hành động (action-value function) mà không cần biết mô hình chuyển đổi trạng thái của môi trường.
@@ -970,10 +967,11 @@ Dựa trên mã nguồn trong file `solve.py`, tôi sẽ phân tích và đưa r
 | **Học**           | <img src="images/QLearning.gif" width="500" alt="AC-3 and A*">  |
 | **Giải**           | <img src="images/QLearning_solve.gif" width="500" alt="Backtracking"> |
 
-
+---
 ## 👨‍💻 Tác giả
 
 **Nguyễn Trí Lâm**  
+Trường: Sư phạm kỹ thuật TP.HCM
 MSSV: `23110250`  
 Môn: `Trí Tuệ Nhân Tạo`
 Giáo viên hướng dẫn: `Phan Thị Huyền Trang` 
