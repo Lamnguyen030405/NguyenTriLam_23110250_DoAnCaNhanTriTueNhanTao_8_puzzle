@@ -6,6 +6,7 @@ import math
 import pickle
 from collections import defaultdict
 from Qlearning import SlidingPuzzleEnv
+import numpy as np
 
 class Solve:
     def __init__(self, start_state, goal_state):
@@ -969,156 +970,307 @@ class Solve:
         return None
 
     def solve_with_backtracking(self, max_depth=50):
-        """
-        Giải bài toán Sliding Puzzle bằng Backtracking Search.
-        - max_depth: Giới hạn độ sâu tìm kiếm để tránh vòng lặp vô hạn.
-        Trả về đường đi dẫn đến trạng thái mục tiêu, hoặc đường đi tốt nhất nếu không tìm thấy.
-        """
+        """Solve the sliding puzzle using recursive backtracking from an all-zero state."""
         if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
             return None
 
-        # Theo dõi đường đi tốt nhất (dựa trên khoảng cách Manhattan nhỏ nhất)
-        best_info = {
-            'path': [self.start_state],
-            'distance': self.manhattan_distance(self.start_state, self.goal_state)
-        }
+        # Validate start_state is all zeros
+        if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+            print("Warning: Expected start_state to be all zeros")
+            return None
 
-        def backtrack(state, path, depth, visited):
-            """Hàm đệ quy thực hiện Backtracking Search."""
-            # Cập nhật đường đi tốt nhất
-            current_distance = self.manhattan_distance(state, self.goal_state)
-            if current_distance < best_info['distance']:
-                best_info['distance'] = current_distance
-                best_info['path'] = path
+        # Initialize metrics
+        self.visited_count = 0
+        self.max_memory = 0
 
-            # Điều kiện dừng: Đạt trạng thái mục tiêu
-            if state == self.goal_state:
-                return path
+        # Initialize state and storage for all states
+        state = [0] * 9  # Start with all zeros
+        all_states = []
 
-            # Điều kiện dừng: Đạt độ sâu tối đa
+        def is_consistent(state, position, value):
+            """Check if assigning 'value' at 'position' is consistent (unique in state)."""
+            count = state.count(value)
+            if position < len(state) and state[position] == value:
+                count -= 1
+            return count == 0
+
+        def is_complete(state):
+            """Check if state is complete and matches goal_state."""
+            return state == self.goal_state and self.is_valid_state(state)
+
+        def recursive_backtracking(state, depth, position=0):
+            """Recursive backtracking to assign values to cells."""
             if depth >= max_depth:
-                return None
+                return False
 
-            # Lấy các trạng thái lân cận (tương ứng với "miền giá trị" trong CSP)
-            neighbors = self.get_neighbors(state)
-            # Sắp xếp neighbors theo khoảng cách Manhattan (heuristic LCV)
-            neighbors.sort(key=lambda x: self.manhattan_distance(x, self.goal_state))
+            if is_complete(state):
+                all_states.append(state[:])
+                self.visited_count += 1
+                self.max_memory = max(self.max_memory, len(all_states))
+                return True
 
-            # Thử từng trạng thái lân cận
-            for next_state in neighbors:
-                state_tuple = tuple(next_state)
-                if state_tuple not in visited:
-                    visited.add(state_tuple)
-                    new_path = path + [next_state]
-                    result = backtrack(next_state, new_path, depth + 1, visited)
-                    if result is not None:
-                        return result
-                    visited.remove(state_tuple)  # Quay lui (backtrack)
+            if position >= 9:
+                return False
 
-            return None
+            values = list(range(9))  # Values from 0 to 8
+            random.shuffle(values)
+            for value in values:
+                if is_consistent(state, position, value):
+                    old_value = state[position]
+                    state[position] = value
+                    all_states.append(state[:])
+                    self.visited_count += 1
+                    self.max_memory = max(self.max_memory, len(all_states))
 
-        # Khởi động Backtracking Search
-        visited = {tuple(self.start_state)}
-        path = [self.start_state]
-        solution = backtrack(self.start_state, path, 0, visited)
+                    if recursive_backtracking(state[:], depth + 1, position + 1):
+                        return True
 
-        # Nếu tìm thấy giải pháp, trả về giải pháp
-        if solution is not None:
-            return solution
-        # Nếu không, trả về đường đi tốt nhất
-        return best_info['path']
+                    state[position] = old_value
+                    all_states.append(state[:])
+                    self.visited_count += 1
 
-    def revise(self, domains, Xi, Xj):
-        """
-        Hàm revise kiểm tra và sửa đổi miền của Xi dựa trên ràng buộc với Xj.
-        Trả về True nếu miền của Xi bị thay đổi, False nếu không.
-        """
-        revised = False
-        # Trong Sliding Puzzle, ràng buộc là ô trống chỉ di chuyển đến ô lân cận
-        # Giả định miền của Xj là các giá trị có thể đạt được từ start_state
-        empty_idx = self.find_empty(self.start_state)
-        row, col = divmod(empty_idx, 3)
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        for dx, dy in directions:
-            new_row, new_col = row + dx, col + dy
-            if 0 <= new_row < 3 and 0 <= new_col < 3:
-                new_idx = new_row * 3 + new_col
-                if new_idx == Xj:
-                    # Kiểm tra giá trị trong miền của Xi
-                    to_remove = []
-                    for value in domains[Xi]:
-                        # Giả định ràng buộc: Nếu Xi không thể di chuyển để khớp với Xj, loại bỏ
-                        # Đây là cách đơn giản hóa, vì Sliding Puzzle có ràng buộc toàn cục
-                        if value != self.start_state[Xi] and value != 0:  # Chỉ giữ giá trị hiện tại hoặc ô trống
-                            to_remove.append(value)
-                    for value in to_remove:
-                        domains[Xi].remove(value)
-                        revised = True
-
-        return revised
-
-    def apply_ac3(self):
-        """
-        Thực hiện thuật toán AC-3 để áp dụng tính nhất quán cung (arc consistency).
-        Trả về True nếu CSP vẫn có giải pháp, False nếu không, và cập nhật miền giá trị của các biến.
-        """
-        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
             return False
 
-        # Khởi tạo miền giá trị ban đầu cho mỗi ô (0 đến 8)
-        domains = {i: list(range(9)) for i in range(9)}
-        for i, value in enumerate(self.start_state):
-            if value != 0:  # Ô trống (0) có thể thay đổi, các ô khác cố định
-                domains[i] = [value]
+        # Start backtracking with consistent randomization
+        random.seed(0)
+        success = recursive_backtracking(state, 0)
 
-        # Khởi tạo queue với tất cả các cung (arcs)
-        # Mỗi cung (i, j) đại diện cho ràng buộc giữa ô i và ô j (dựa trên di chuyển ô trống)
-        queue = []
-        for i in range(9):
-            empty_idx = self.find_empty(self.start_state)
-            row, col = divmod(empty_idx, 3)
-            directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-            for dx, dy in directions:
-                new_row, new_col = row + dx, col + dy
-                if 0 <= new_row < 3 and 0 <= new_col < 3:
-                    new_idx = new_row * 3 + new_col
-                    if i != new_idx:  # Tránh cung tự phản xạ
-                        queue.append((i, new_idx))
+        return all_states if success and all_states else None
 
-        # Xóa trùng lặp trong queue
-        queue = list(set(queue))
+    def reset_metrics(self):
+        """Reset metrics for tracking visited states and memory usage."""
+        self.visited_count = 0
+        self.max_memory = 0
 
-        while queue:
-            (Xi, Xj) = queue.pop(0)
-            if self.revise(domains, Xi, Xj):
-                if not domains[Xi]:  # Nếu miền của Xi rỗng
+    def calculate_constraints(self):
+        """Calculate the order of positions to assign values, prioritizing center."""
+        # Order positions to assign values, starting with center (1,1), then others, excluding (2,2)
+        order = [(1, 1)]  # Start with center
+        for row in range(3):
+            for col in range(3):
+                if (row, col) != (1, 1) and (row, col) != (2, 2):
+                    order.append((row, col))
+        return order
+
+    def check_constraints(self, state, row, col, value):
+        """Check if assigning 'value' at (row, col) is consistent (unique in state)."""
+        # Check if value is already present in the state
+        for i in range(3):
+            for j in range(3):
+                if state[i][j] is not None and state[i][j] == value:
                     return False
-                # Thêm các cung mới liên quan đến Xi vào queue
-                empty_idx = self.find_empty(self.start_state)
-                row, col = divmod(empty_idx, 3)
-                for dx, dy in directions:
-                    new_row, new_col = row + dx, col + dy
-                    if 0 <= new_row < 3 and 0 <= new_col < 3:
-                        new_idx = new_row * 3 + new_col
-                        if new_idx != Xj and new_idx != Xi and (new_idx, Xi) not in queue:
-                            queue.append((new_idx, Xi))
-
         return True
 
-    def solve_with_ac3(self):
-        """
-        Sử dụng thuật toán AC-3 để tiền xử lý, sau đó tìm đường đi từ start_state đến goal_state.
-        Trả về đường đi nếu có, hoặc None nếu không có giải pháp.
-        """
-        # Bước 1: Áp dụng AC-3 để kiểm tra tính khả thi
-        ac3_result = self.apply_ac3()
-        if not ac3_result:
-            return None  # Không có giải pháp
+    def solve_with_generate_and_test(self, max_depth=50):
+        """Solve the sliding puzzle using generate-and-test with backtracking from an all-zero state."""
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return None
 
-        # Bước 2: Sử dụng A* để tìm đường đi
-        # Vì AC-3 không thay đổi trạng thái tìm kiếm trong Sliding Puzzle,
-        # chúng ta gọi trực tiếp solve_with_astar
-        return self.solve_with_astar()
+        # Validate start_state is all zeros
+        if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+            print("Warning: Expected start_state to be all zeros for generate-and-test")
+            return None
+
+        # Initialize metrics
+        self.reset_metrics()
+
+        # Initialize state as 2D list
+        state = [[None for _ in range(3)] for _ in range(3)]
+        all_states = []
+        state_count = [0]
+
+        # Calculate order of positions and other positions
+        order = self.calculate_constraints()
+        other_positions = [pos for pos in order if pos != (1, 1) and pos != (2, 2)]
+        center_values = random.sample(range(1, 9), 8)  # Values for center (1,1)
+
+        def is_complete(state):
+            """Check if state is complete and matches goal_state."""
+            # Convert 2D state to 1D
+            flat_state = []
+            for i in range(3):
+                for j in range(3):
+                    flat_state.append(0 if state[i][j] is None else state[i][j])
+            return flat_state == self.goal_state and self.is_valid_state(flat_state)
+
+        def backtrack(index, depth=0):
+            """Backtrack to assign values to cells."""
+            if depth >= max_depth:
+                return False
+
+            # Convert current 2D state to 1D for storage
+            flat_state = []
+            for i in range(3):
+                for j in range(3):
+                    flat_state.append(0 if state[i][j] is None else state[i][j])
+            all_states.append(flat_state)
+            state_count[0] += 1
+            self.visited_count += 1
+            self.max_memory = max(self.max_memory, state_count[0])
+
+            if index == len(other_positions) + 1:
+                state[2][2] = 0  # Assign 0 to (2,2) as empty tile
+                flat_state = []
+                for i in range(3):
+                    for j in range(3):
+                        flat_state.append(0 if state[i][j] is None else state[i][j])
+                all_states.append(flat_state)
+                state_count[0] += 1
+                self.visited_count += 1
+                if is_complete(state):
+                    return True
+                state[2][2] = None
+                return False
+
+            if index == 0:
+                row, col = (1, 1)  # Start with center
+                values = center_values
+            else:
+                row, col = other_positions[index - 1]
+                # Available values are those not yet used
+                used_values = [state[i][j] for i in range(3) for j in range(3) if state[i][j] is not None]
+                values = [v for v in range(1, 9) if v not in used_values]
+
+            for value in values:
+                if self.check_constraints(state, row, col, value):
+                    state[row][col] = value
+                    if backtrack(index + 1, depth + 1):
+                        return True
+                    state[row][col] = None
+
+            return False
+
+        # Start backtracking with consistent randomization
+        random.seed(0)
+        success = backtrack(0)
+
+        return all_states if success and all_states else None
+
+    def solve_with_ac3(self, max_depth=50):
+        """Solve the sliding puzzle using AC-3 for arc consistency followed by backtracking."""
+        if not self.is_valid_state(self.start_state) or not self.is_valid_state(self.goal_state):
+            return None
+
+        # Validate start_state is all zeros for backtracking
+        if self.start_state != [0, 0, 0, 0, 0, 0, 0, 0, 0]:
+            print("Warning: Expected start_state to be all zeros for AC-3 and backtracking")
+            return None
+
+        # Initialize metrics
+        self.visited_count = 0
+        self.max_memory = 0
+
+        # Initialize state as 2D array
+        state = np.zeros((3, 3), dtype=int)
+        DOMAIN = list(range(9))  # Values from 0 to 8 (0 represents empty tile)
+        all_states = []
+
+        def is_consistent(state, row, col, value):
+            """Check if assigning 'value' at (row, col) is consistent (unique in state)."""
+            flat_state = state.flatten()
+            count = list(flat_state).count(value)
+            return count == 0
+
+        def is_complete(state):
+            """Check if state is complete and matches goal_state."""
+            flat_state = state.flatten().tolist()
+            return flat_state == self.goal_state and self.is_valid_state(flat_state)
+
+        def find_unassigned(state):
+            """Find the next unassigned cell (row, col)."""
+            for row in range(3):
+                for col in range(3):
+                    if state[row, col] == 0:
+                        return row, col
+            return None, None
+
+        def revise(domains, xi, xj):
+            """Revise domains[xi] based on domains[xj] to enforce arc consistency."""
+            revised = False
+            xi_row, xi_col = divmod(xi, 3)
+            xj_row, xj_col = divmod(xj, 3)
+            for x in domains[xi][:]:
+                # Check if there exists a value y in domains[xj] that satisfies the constraint
+                # Constraint: xi and xj must have different values
+                conflict = all(x == y for y in domains[xj])
+                if conflict:
+                    domains[xi].remove(x)
+                    revised = True
+            return revised
+
+        def ac3_algorithm(domains, variables, neighbors):
+            """Run AC-3 to enforce arc consistency."""
+            queue = deque((xi, xj) for xi in variables for xj in neighbors[xi])
+            while queue:
+                xi, xj = queue.popleft()
+                if revise(domains, xi, xj):
+                    if not domains[xi]:
+                        return False
+                    for xk in neighbors[xi]:
+                        if xk != xj:
+                            queue.append((xk, xi))
+            return True
+
+        def backtracking_with_ac3(state, domains, all_states, depth=0):
+            """Backtracking with AC-3 preprocessed domains."""
+            if depth >= max_depth:
+                return False
+
+            if is_complete(state):
+                all_states.append(state.flatten().tolist())
+                self.visited_count += 1
+                self.max_memory = max(self.max_memory, len(all_states))
+                return True
+
+            row, col = find_unassigned(state)
+            if row is None:
+                return False
+
+            # Convert (row, col) to variable index
+            xi = row * 3 + col
+            values = domains[xi].copy()
+            np.random.shuffle(values)
+
+            for value in values:
+                if is_consistent(state, row, col, value):
+                    old_value = state[row, col]
+                    state[row, col] = value
+                    all_states.append(state.flatten().tolist())
+                    self.visited_count += 1
+                    self.max_memory = max(self.max_memory, len(all_states))
+
+                    # Create a copy of domains to restore after recursion
+                    domains_copy = {k: v.copy() for k, v in domains.items()}
+                    if backtracking_with_ac3(state.copy(), domains_copy, all_states, depth + 1):
+                        return True
+
+                    state[row, col] = old_value
+                    all_states.append(state.flatten().tolist())
+                    self.visited_count += 1
+
+            return False
+
+        # Initialize variables and neighbors for AC-3
+        variables = list(range(9))  # Variables are cell indices 0 to 8
+        neighbors = {i: [] for i in range(9)}
+        for i in range(9):
+            for j in range(9):
+                if i != j:
+                    neighbors[i].append(j)  # All pairs of distinct cells have a uniqueness constraint
+
+        # Initialize domains
+        domains = {i: DOMAIN.copy() for i in range(9)}
+
+        # Run AC-3 to enforce arc consistency
+        np.random.seed(0)
+        ac3_result = ac3_algorithm(domains, variables, neighbors)
+        if not ac3_result:
+            return None  # No solution possible
+
+        # Run backtracking with AC-3 preprocessed domains
+        success = backtracking_with_ac3(state, domains, all_states)
+
+        return all_states if success and all_states else None
 
     def save_q_table(self, Q, filename="q_table.pkl"):
         with open(filename, 'wb') as f:

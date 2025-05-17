@@ -6,6 +6,7 @@ import time
 import numpy as np
 from sensorless_env import SensorlessEnvironment
 import threading
+import subprocess
 
 pygame.init()
 
@@ -49,12 +50,15 @@ LIGHT_GRAY = (220, 220, 220)
 DEFAULT_INITIAL_STATE = [2, 6, 5, 0, 8, 7, 4, 3, 1]
 INITIAL_STATE = copy.deepcopy(DEFAULT_INITIAL_STATE)
 GOAL_STATE = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+BACKTRACKING_INITIAL_STATE = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 # Function to update interface components based on screen size
 def update_layout():
     global WIDTH, HEIGHT, TILE_SIZE, SMALL_GRID_SIZE, MAIN_GRID_X, MAIN_GRID_Y, START_GRID_X, START_GRID_Y, GOAL_GRID_X, GOAL_GRID_Y
     global SOLVE_BUTTON_RECT, NEXT_STEP_BUTTON_RECT, BACK_BUTTON_RECT, RESET_BUTTON_RECT, SET_INITIAL_BUTTON_RECT
     global SENSORLESS_ENV_BUTTON_RECT, POPUP_WIDTH, POPUP_HEIGHT, POPUP_X, POPUP_Y, YES_BUTTON_RECT, NO_BUTTON_RECT, combo_box
+    global QLEARN_BUTTON_RECT
+    
 
     WIDTH, HEIGHT = screen.get_size()
     TILE_SIZE = min(WIDTH // 5, HEIGHT // 5)
@@ -84,6 +88,8 @@ def update_layout():
     YES_BUTTON_RECT = pygame.Rect(POPUP_X + POPUP_WIDTH * 0.25, POPUP_Y + POPUP_HEIGHT * 0.5, POPUP_WIDTH * 0.2, POPUP_HEIGHT * 0.2)
     NO_BUTTON_RECT = pygame.Rect(POPUP_X + POPUP_WIDTH * 0.55, POPUP_Y + POPUP_HEIGHT * 0.5, POPUP_WIDTH * 0.2, POPUP_HEIGHT * 0.2)
 
+    QLEARN_BUTTON_RECT = pygame.Rect(WIDTH * 0.85, HEIGHT * 0.8, BUTTON_WIDTH * 1.5, BUTTON_HEIGHT)
+
     combo_box.update_layout(
         x=WIDTH * 0.05,
         y=HEIGHT * 0.05,
@@ -95,7 +101,7 @@ def update_layout():
 combo_box = ComboBox(WIDTH * 0.05, HEIGHT * 0.05, WIDTH * 0.2, HEIGHT * 0.05, 
                      ["BFS", "DFS", "UCS", "IDS", "Greedy", "A*", "IDA*", "Hill Climbing", 
                       "SA Hill Climbing", "Stochastic Hill Climbing", "Beam Search", "Annealing", 
-                      "Genetic Algorithm", "AND-OR Graph", "Backtracking", "AC-3 and A*", "Q - Learning"])
+                      "Genetic Algorithm", "AND-OR Graph", "Backtracking", "Generate and Test", "AC-3 and Backtracking", "Q - Learning"])
 
 execution_history = []
 
@@ -149,8 +155,6 @@ def draw_board(state, solution=None, current_step=0, show_popup=False, selected_
     draw_small_board(GOAL_STATE, (GOAL_GRID_X, GOAL_GRID_Y), "Goal State")
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    if combo_box:
-        combo_box.draw(screen)
 
     if SOLVE_BUTTON_RECT.collidepoint((mouse_x, mouse_y)):
         pygame.draw.rect(screen, RED, SOLVE_BUTTON_RECT)
@@ -213,6 +217,14 @@ def draw_board(state, solution=None, current_step=0, show_popup=False, selected_
     text_rect = text.get_rect(center=SENSORLESS_ENV_BUTTON_RECT.center)
     screen.blit(text, text_rect)
 
+    if QLEARN_BUTTON_RECT.collidepoint((mouse_x, mouse_y)):
+        pygame.draw.rect(screen, RED, QLEARN_BUTTON_RECT)
+    else:
+        pygame.draw.rect(screen, (200, 100, 200), QLEARN_BUTTON_RECT)
+    text = font.render("Train Q-Learning", True, WHITE)
+    text_rect = text.get_rect(center=QLEARN_BUTTON_RECT.center)
+    screen.blit(text, text_rect)
+
     if is_customizing:
         font = pygame.font.Font(None, int(HEIGHT * 0.045))
         text = font.render("CUSTOMIZING INITIAL STATE", True, RED)
@@ -237,6 +249,9 @@ def draw_board(state, solution=None, current_step=0, show_popup=False, selected_
         status = "Solved" if is_solved else "Best State"
         text = font.render(f"{algo}: {time_taken:.6f}s ({status})", True, BLACK)
         screen.blit(text, (START_GRID_X, y_offset + (i + 1) * HEIGHT * 0.035))
+
+    if combo_box:
+        combo_box.draw(screen)
 
     if show_popup:
         pygame.draw.rect(screen, (200, 200, 200), (POPUP_X, POPUP_Y, POPUP_WIDTH, POPUP_HEIGHT))
@@ -278,7 +293,7 @@ def move_tile(state, direction):
         new_col += 1
     else:
         return state
-    
+        
     new_idx = new_row * 3 + new_col
     new_state = copy.deepcopy(state)
     new_state[empty_idx], new_state[new_idx] = new_state[new_idx], new_state[empty_idx]
@@ -324,6 +339,17 @@ while running:
                 if SOLVE_BUTTON_RECT.collidepoint(x, y) and not is_customizing:
                     is_playing = False
                     selected_algorithm = combo_box.selected_option
+
+                    # Set initial state based on algorithm
+                    if selected_algorithm == "Backtracking" or selected_algorithm == "AC-3 and Backtracking" or selected_algorithm == "Generate and Test":
+                        INITIAL_STATE = copy.deepcopy(BACKTRACKING_INITIAL_STATE)
+                        current_state = copy.deepcopy(BACKTRACKING_INITIAL_STATE)
+                        print("Set initial state to all zeros for Backtracking")
+                    else:
+                        INITIAL_STATE = copy.deepcopy(DEFAULT_INITIAL_STATE)
+                        current_state = copy.deepcopy(DEFAULT_INITIAL_STATE)
+                        print("Set initial state to default")
+
                     solve = Solve(current_state, GOAL_STATE)
                     
                     start_time = time.time()
@@ -365,30 +391,15 @@ while running:
                         solution = solve.solve_with_and_or_graph()
                     elif selected_algorithm == "Backtracking":
                         solution = solve.solve_with_backtracking(5000)
-                    elif selected_algorithm == "AC-3 and A*":
+                    elif selected_algorithm == "AC-3 and Backtracking":
                         solution = solve.solve_with_ac3()
+                    elif selected_algorithm == "Generate and Test":
+                        solution = solve.solve_with_generate_and_test()
                     elif selected_algorithm == "Q - Learning":
-                        def run_q_learning():
-                            global solution, is_solution_found
-                            solution = solve.solve_with_q_learning(episodes=50000)
-                            end_time = time.time()
-                            execution_time = end_time - start_time
-                            if solution and solution[-1] == GOAL_STATE:
-                                is_solution_found = True
-                                execution_history.append((selected_algorithm, execution_time, True))
-                                print(f"Solution found with {selected_algorithm}! Steps: {len(solution) - 1}")
-                                print(f"Execution Time: {execution_time:.6f} seconds")
-                            else:
-                                is_solution_found = False
-                                execution_history.append((selected_algorithm, execution_time, False))
-                                print(f"No solution found with {selected_algorithm}! Showing best state reached.")
-                                print(f"Execution Time: {execution_time:.6f} seconds")
-                            global show_popup
-                            show_popup = True
-
-                        print("Running Q-Learning... This may take a while.")
-                        threading.Thread(target=run_q_learning, daemon=True).start()
-                        continue
+                        try:
+                            solution = solve.solve_with_q_learning() 
+                        except Exception as e:
+                            print(f"Error applying Q-Learning: {e}")
 
                     end_time = time.time()
                     execution_time = end_time - start_time
@@ -408,11 +419,12 @@ while running:
 
                     current_step = 0
                     if solution:
-                        for state in solution:
-                            np_array = np.array(state)
-                            np_array = np_array.reshape(3, 3)
-                            print(np_array)
-                            print("-------------------")
+                        if selected_algorithm != "Backtracking" and selected_algorithm != "AC-3 and Backtracking" and selected_algorithm != "Generate and Test":
+                            for state in solution:
+                                np_array = np.array(state)
+                                np_array = np_array.reshape(3, 3)
+                                print(np_array)
+                                print("-------------------")
 
                 elif solution and NEXT_STEP_BUTTON_RECT.collidepoint(x, y) and not is_customizing:
                     is_playing = False
@@ -449,6 +461,13 @@ while running:
                     is_playing = False
                     in_sensorless_env = True
                     sensorless_env = SensorlessEnvironment(current_state, GOAL_STATE, screen, WIDTH, HEIGHT, SMALL_GRID_SIZE)
+
+                elif QLEARN_BUTTON_RECT.collidepoint(x, y):
+                    try:
+                        subprocess.Popen(["python", "Qlearning.py"])
+                        print("Opening GUI training Q-Learning...")
+                    except Exception as e:
+                        print(f"Can not open Qlearning.py: {e}")
 
                 elif show_popup:
                     if YES_BUTTON_RECT.collidepoint(x, y):

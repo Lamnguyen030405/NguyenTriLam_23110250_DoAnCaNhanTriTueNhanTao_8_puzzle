@@ -285,25 +285,26 @@ class QLearningTrainer:
                 print("Q-Table saved to q_table.pkl")
         return True
 
-# Khởi tạo trạng thái mục tiêu mặc định
-GOAL_STATE = [1, 2, 3, 4, 5, 6, 7, 8, 0]
-trainer = QLearningTrainer(GOAL_STATE)
+if __name__ == "__main__":
+    # Chỉ chạy code này khi file được execute trực tiếp
+    GOAL_STATE = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+    trainer = QLearningTrainer(GOAL_STATE)
 
-# Vòng lặp chính
-clock = pygame.time.Clock()
-running = True
+    # Vòng lặp chính
+    clock = pygame.time.Clock()
+    running = True
 
-while running:
-    for event in pygame.event.get():
-        running = trainer.handle_event(event)
+    while running:
+        for event in pygame.event.get():
+            running = trainer.handle_event(event)
 
-    # Thực hiện một bước huấn luyện
-    trainer.train_step()
+        # Thực hiện một bước huấn luyện
+        trainer.train_step()
 
-    # Vẽ giao diện
-    trainer.draw()
+        # Vẽ giao diện
+        trainer.draw()
 
-    # Giới hạn tốc độ khung hình
-    clock.tick(30)  # Giảm tốc độ để dễ quan sát
+        # Giới hạn tốc độ khung hình
+        clock.tick(30)  # Giảm tốc độ để dễ quan sát
 
-pygame.quit()
+    pygame.quit()
